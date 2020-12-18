@@ -1,4 +1,5 @@
 import os
+import glob
 from abc import ABCMeta, abstractmethod
 
 import torch
@@ -19,7 +20,7 @@ class EasyTraining:
         self.start_epoch = 0
 
         self.model_name = cfg.MODEL.NAME
-        self.ckpt_save_dir = cfg.TRAIN.CKPT_SAVE_DIR
+        self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, cfg.md5())
 
         self.epoch_meter = {}
 
@@ -41,6 +42,7 @@ class EasyTraining:
             self.load_model_resume()
         else:
             os.makedirs(self.ckpt_save_dir)
+            cfg.export(os.path.join(self.ckpt_save_dir, 'param.txt'))
 
     @abstractmethod
     def run_iters(self, epoch_index, iter_index, data):
@@ -59,9 +61,9 @@ class EasyTraining:
 
     def _load_checkpoint(self, ckpt_path=None):
         if ckpt_path is None:
-            ckpt_list = os.listdir(self.ckpt_save_dir)
+            ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt'))
             ckpt_list.sort()
-            ckpt_path = os.path.join(self.ckpt_save_dir, ckpt_list[-1])
+            ckpt_path = ckpt_list[-1]
         return torch.load(ckpt_path)
 
     def load_model_resume(self):
