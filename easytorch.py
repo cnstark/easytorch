@@ -1,10 +1,12 @@
 import os
 import glob
+from datetime import datetime
 from abc import ABCMeta, abstractmethod
 
 import torch
 from torch import optim
 from torch.optim import lr_scheduler
+from tensorboardX import SummaryWriter
 
 from .utils import *
 
@@ -22,6 +24,9 @@ class EasyTraining:
         self.model_name = cfg.MODEL.NAME
         self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, cfg.md5())
         self.over_write_ckpt = cfg.TRAIN.OVERWRITE_CKPT
+
+        tensorboard_dir = os.path.join(self.ckpt_save_dir, 'runs', datetime.now().strftime('%Y%m%d%H%M%S'))
+        self.tensorboard_writer = SummaryWriter(tensorboard_dir)
 
         self.epoch_meter = {}
 
@@ -116,16 +121,19 @@ class EasyTraining:
                 self.scheduler.step()
             # print meters
             self._print_epoch_meters()
+            # tensorboard plt meters
+            self._plt_epoch_meters(epoch)
             # save model
             self._save_model(epoch)
             # reset meters
             self._reset_epoch_meters()
 
-    def register_epoch_meter(self, name, fmt='{:f}'):
+    def register_epoch_meter(self, name, fmt='{:f}', plt=True):
         self.epoch_meter[name] = {
             'meter': AvgMeter(),
             'index': len(self.epoch_meter.keys()),
-            'format': fmt
+            'format': fmt,
+            'plt': plt
         }
 
     def update_epoch_meter(self, name, value):
@@ -144,6 +152,11 @@ class EasyTraining:
                     )
         print_str = ', '.join(print_list)
         print(print_str)
+
+    def _plt_epoch_meters(self, epoch):
+        for name, value in self.epoch_meter.items():
+            if value['plt']:
+                self.tensorboard_writer.add_scalar(name, value['meter'].avg, global_step=epoch)
 
     def _reset_epoch_meters(self):
         for name, value in self.epoch_meter.items():
