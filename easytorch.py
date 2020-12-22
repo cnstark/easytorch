@@ -21,6 +21,7 @@ class EasyTraining:
 
         self.model_name = cfg.MODEL.NAME
         self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, cfg.md5())
+        self.over_write_ckpt = cfg.TRAIN.OVERWRITE_CKPT
 
         self.epoch_meter = {}
 
@@ -49,6 +50,8 @@ class EasyTraining:
         pass
 
     def _save_model(self, epoch):
+        if self.over_write_ckpt:
+            self._backup_checkpoint()
         checkpoint_dict = {}
         checkpoint_dict['epoch'] = epoch
         checkpoint_dict['model_state_dict'] = self.model.state_dict()
@@ -58,6 +61,8 @@ class EasyTraining:
         checkpoint_name = '{}_{}.pt'.format(self.model_name, epoch_str)
         checkpoint_path = os.path.join(self.ckpt_save_dir, checkpoint_name)
         torch.save(checkpoint_dict, checkpoint_path)
+        if self.over_write_ckpt:
+            self._clear_checkpoint()
 
     def _load_checkpoint(self, ckpt_path=None):
         if ckpt_path is None:
@@ -65,6 +70,17 @@ class EasyTraining:
             ckpt_list.sort()
             ckpt_path = ckpt_list[-1]
         return torch.load(ckpt_path)
+
+    def _clear_checkpoint(self):
+        ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt.bak'))
+        for ckpt in ckpt_list:
+            os.remove(ckpt)
+
+    def _backup_checkpoint(self):
+        ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt'))
+        for ckpt in ckpt_list:
+            ckpt_bak = ckpt + '.bak'
+            os.rename(ckpt, ckpt_bak)
 
     def load_model_resume(self):
         try:
