@@ -8,7 +8,7 @@ from torch import optim
 from torch.optim import lr_scheduler
 from tensorboardX import SummaryWriter
 
-from .utils import *
+from .utils import AvgMeter
 
 
 class EasyTraining:
