@@ -52,7 +52,7 @@ class EasyTraining:
         checkpoint_dict = {}
         checkpoint_dict['epoch'] = epoch
         checkpoint_dict['model_state_dict'] = self.model.state_dict()
-        # checkpoint_dict['optim_state_dict'] = self.optim.state_dict()
+        checkpoint_dict['optim_state_dict'] = self.optim.state_dict()
 
         epoch_str = str(epoch).zfill(len(str(self.num_epochs)))
         checkpoint_name = '{}_{}.pt'.format(self.model_name, epoch_str)
@@ -70,7 +70,7 @@ class EasyTraining:
         try:
             checkpoint_dict = self._load_checkpoint()
             self.model.load_state_dict(checkpoint_dict['model_state_dict'])
-            # self.optim.load_state_dict(checkpoint_dict['optim_state_dict'])
+            self.optim.load_state_dict(checkpoint_dict['optim_state_dict'])
             self.start_epoch = checkpoint_dict['epoch']
             if self.scheduler is not None:
                 self.scheduler.last_epoch = checkpoint_dict['epoch']
