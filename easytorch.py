@@ -1,6 +1,5 @@
 import os
 import glob
-from datetime import datetime
 from abc import ABCMeta, abstractmethod
 
 import torch
@@ -51,8 +50,11 @@ class EasyTraining:
             os.makedirs(self.ckpt_save_dir)
             cfg.export(os.path.join(self.ckpt_save_dir, 'param.txt'))
 
-        tensorboard_dir = os.path.join(self.ckpt_save_dir, 'runs', datetime.now().strftime('%Y%m%d%H%M%S'))
-        self.tensorboard_writer = SummaryWriter(tensorboard_dir)
+        tensorboard_dir = os.path.join(self.ckpt_save_dir, 'tensorboard')
+        self.tensorboard_writer = SummaryWriter(
+            tensorboard_dir,
+            purge_step=(self.start_epoch + 1) if self.start_epoch != 0 else None
+        )
 
     def _save_model(self, epoch):
         if self.over_write_ckpt:
