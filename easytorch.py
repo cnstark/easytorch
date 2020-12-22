@@ -11,12 +11,16 @@ from tensorboardX import SummaryWriter
 from .utils import AvgMeter
 
 
+METER_TYPES = ['train', 'val']
+
+
 class EasyTraining:
     __metaclass__ = ABCMeta
 
-    def __init__(self, cfg, model, data_loader):
+    def __init__(self, cfg, model, train_data_loader, val_data_loader):
         self.model = model
-        self.data_loader = data_loader
+        self.train_data_loader = train_data_loader
+        self.val_data_loader = val_data_loader
 
         self.num_epochs = cfg.TRAIN.NUM_EPOCHS
         self.start_epoch = 0
@@ -24,9 +28,6 @@ class EasyTraining:
         self.model_name = cfg.MODEL.NAME
         self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, cfg.md5())
         self.over_write_ckpt = cfg.TRAIN.OVERWRITE_CKPT
-
-        tensorboard_dir = os.path.join(self.ckpt_save_dir, 'runs', datetime.now().strftime('%Y%m%d%H%M%S'))
-        self.tensorboard_writer = SummaryWriter(tensorboard_dir)
 
         self.epoch_meter = {}
 
@@ -50,9 +51,8 @@ class EasyTraining:
             os.makedirs(self.ckpt_save_dir)
             cfg.export(os.path.join(self.ckpt_save_dir, 'param.txt'))
 
-    @abstractmethod
-    def run_iters(self, epoch_index, iter_index, data):
-        pass
+        tensorboard_dir = os.path.join(self.ckpt_save_dir, 'runs', datetime.now().strftime('%Y%m%d%H%M%S'))
+        self.tensorboard_writer = SummaryWriter(tensorboard_dir)
 
     def _save_model(self, epoch):
         if self.over_write_ckpt:
@@ -106,11 +106,15 @@ class EasyTraining:
         # TODO
         pass
 
+    @abstractmethod
+    def run_iters(self, epoch_index, iter_index, data):
+        pass
+
     def train(self):
         for epoch_index in range(self.start_epoch, self.num_epochs):
             epoch = epoch_index + 1
             print('EPOCH {:d} / {:d}'.format(epoch, self.num_epochs))
-            for iter_index, data in enumerate(self.data_loader):
+            for iter_index, data in enumerate(self.train_data_loader):
                 loss = self.run_iters(epoch, iter_index, data)
                 self.optim.zero_grad()
                 loss.backward()
@@ -119,8 +123,12 @@ class EasyTraining:
             if self.scheduler is not None:
                 print(self.scheduler.get_lr())
                 self.scheduler.step()
-            # print meters
-            self._print_epoch_meters()
+            # print train meters
+            self._print_epoch_meters('train')
+            # validate
+            self.validate()
+            # print val meters
+            self._print_epoch_meters('val')
             # tensorboard plt meters
             self._plt_epoch_meters(epoch)
             # save model
@@ -128,11 +136,22 @@ class EasyTraining:
             # reset meters
             self._reset_epoch_meters()
 
-    def register_epoch_meter(self, name, fmt='{:f}', plt=True):
+    @abstractmethod
+    def val_iters(self, iter_index, data):
+        pass
+
+    def validate(self):
+        for iter_index, data in enumerate(self.val_data_loader):
+            self.val_iters(iter_index, data)
+
+    def register_epoch_meter(self, name, meter_type, fmt='{:f}', plt=True):
+        if meter_type not in METER_TYPES:
+            raise ValueError('Unsupport meter type!')
         self.epoch_meter[name] = {
             'meter': AvgMeter(),
             'index': len(self.epoch_meter.keys()),
             'format': fmt,
+            'type': meter_type,
             'plt': plt
         }
 
@@ -142,15 +161,15 @@ class EasyTraining:
     def get_epoch_meter_avg(self, name):
         return self.epoch_meter[name]['meter'].avg
 
-    def _print_epoch_meters(self):
+    def _print_epoch_meters(self, meter_type):
         print_list = []
         for i in range(len(self.epoch_meter.keys())):
             for name, value in self.epoch_meter.items():
-                if value['index'] == i:
+                if value['index'] == i and value['type'] == meter_type:
                     print_list.append(
                         ('{}: ' + value['format']).format(name, value['meter'].avg)
                     )
-        print_str = ', '.join(print_list)
+        print_str = '{}:: [{}]'.format(meter_type, ', '.join(print_list))
         print(print_str)
 
     def _plt_epoch_meters(self, epoch):
