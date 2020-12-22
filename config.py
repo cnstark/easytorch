@@ -47,6 +47,8 @@ class Config(EasyDict):
 
     @staticmethod
     def import_cfg(path, verbose=True):
+        if path.find('.py') != -1:
+            path = path[:path.find('.py')].replace('/', '.')
         cfg_name = path.split('.')[-1]
         cfg = __import__(path, fromlist=[cfg_name]).CFG
         if verbose:
