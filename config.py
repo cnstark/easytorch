@@ -55,5 +55,5 @@ class Config(EasyDict):
 
     def md5(self):
         m = hashlib.md5()
-        m.update(str(sorted(self.pure_dict())).encode('utf-8'))
+        m.update(str(self._cfg_str()).encode('utf-8'))
         return m.hexdigest()
