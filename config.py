@@ -10,8 +10,13 @@ class Config(EasyDict):
             if isinstance(v, Config):
                 s += (indent + '{}:').format(k) + '\n'
                 s += v._cfg_str(indent + '  ')
-            elif isinstance(v, (types.MethodType, types.FunctionType)):
+            elif isinstance(v, types.MethodType):
                 pass
+            elif isinstance(v, types.FunctionType):
+                if str(v).find('function Config.') != -1:
+                    pass
+                else:
+                    s += (indent + '{}: {}').format(k, v.__name__) + '\n'
             else:
                 s += (indent + '{}: {}').format(k, v) + '\n'
         return s
@@ -32,8 +37,11 @@ class Config(EasyDict):
         pop_list = []
         dict_list = []
         for k, v in d.items():
-            if isinstance(v, (types.MethodType, types.FunctionType)):
+            if isinstance(v, types.MethodType):
                 pop_list.append(k)
+            elif isinstance(v, types.FunctionType):
+                if str(v).find('function Config.') != -1:
+                    pop_list.append(k)
             elif isinstance(v, Config):
                 dict_list.append(k)
 
