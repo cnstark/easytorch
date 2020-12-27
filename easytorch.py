@@ -112,15 +112,19 @@ class EasyTraining:
     def run_iters(self, epoch_index, iter_index, data):
         pass
 
+    def backward(self, loss):
+        self.optim.zero_grad()
+        loss.backward()
+        self.optim.step()
+
     def train(self):
         for epoch_index in range(self.start_epoch, self.num_epochs):
             epoch = epoch_index + 1
             print('EPOCH {:d} / {:d}'.format(epoch, self.num_epochs))
             for iter_index, data in enumerate(self.train_data_loader):
                 loss = self.run_iters(epoch, iter_index, data)
-                self.optim.zero_grad()
-                loss.backward()
-                self.optim.step()
+                if loss is not None:
+                    self.backward(loss)
             # update lr_scheduler
             if self.scheduler is not None:
                 print(self.scheduler.get_lr())
