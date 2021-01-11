@@ -24,6 +24,8 @@ class _BaseEasyTraining(metaclass=ABCMeta):
 
         self.nn = nn
 
+        self.nn.set_ckpt_save_dir(self.ckpt_save_dir)
+
         # create model
         self._create_model(cfg)
 

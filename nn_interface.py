@@ -10,6 +10,8 @@ class NNInterface(metaclass=ABCMeta):
         self.meter_pool = None
         self.tensorboard_writer = None
 
+        self.ckpt_save_dir = None
+
     @abstractstaticmethod
     def define_model(cfg):
         pass
@@ -67,3 +69,6 @@ class NNInterface(metaclass=ABCMeta):
     
     def set_tensorboard_writer(self, tensorboard_writer):
         self.tensorboard_writer = tensorboard_writer
+
+    def set_ckpt_save_dir(self, ckpt_save_dir):
+        self.ckpt_save_dir = ckpt_save_dir
