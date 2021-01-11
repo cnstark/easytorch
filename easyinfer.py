@@ -25,6 +25,7 @@ class EasyInfer:
     def _create_model(self, cfg):
         model = self.nn.define_model(cfg)
         model = model.cuda()
+        model.eval()
         self.nn.set_model(model)
 
     def _get_ckpt_path(self):
