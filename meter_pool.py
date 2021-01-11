@@ -4,8 +4,22 @@ import torch
 METER_TYPES = ['train', 'val']
 
 
-class MeterPool:
+class AvgMeter(object):
+    def __init__(self):
+        self.reset()
 
+    def reset(self):
+        self.avg = 0.
+        self.sum = 0.
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+
+class MeterPool:
     def __init__(self, tensorboard_writer):
         self._pool = {}
         self._tensorboard_writer = tensorboard_writer
@@ -14,7 +28,7 @@ class MeterPool:
         if meter_type not in METER_TYPES:
             raise ValueError('Unsupport meter type!')
         self._pool[name] = {
-            'meter': self._AvgMeter(),
+            'meter': AvgMeter(),
             'index': len(self._pool.keys()),
             'format': fmt,
             'type': meter_type,
@@ -46,20 +60,6 @@ class MeterPool:
     def reset(self):
         for _, value in self._pool.items():
             value['meter'].reset()
-
-    class _AvgMeter(object):
-        def __init__(self):
-            self.reset()
-
-        def reset(self):
-            self.avg = 0.
-            self.sum = 0.
-            self.count = 0
-
-        def update(self, val, n=1):
-            self.sum += val * n
-            self.count += n
-            self.avg = self.sum / self.count
 
 
 class MeterPoolDDP(MeterPool):
