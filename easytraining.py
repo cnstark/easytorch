@@ -7,7 +7,7 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch import optim
 from torch.optim import lr_scheduler
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
 from .nn_interface import NNInterface
 from .meter_pool import MeterPool
