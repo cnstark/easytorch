@@ -191,6 +191,7 @@ class EasyTraining(_BaseEasyTraining):
 
         # epoch time meter
         self.register_epoch_meter('epoch_time', 'train', '{:.2f} (s)', plt=False)
+        self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
         # lr meter
         if self.nn.scheduler is not None:
             self.register_epoch_meter('lr', 'train', '{:.2e}')
@@ -234,7 +235,10 @@ class EasyTraining(_BaseEasyTraining):
         # print train meters
         self.print_epoch_meters('train')
         # validate
+        val_start_time = time.time()
         self.validate()
+        val_end_time = time.time()
+        self.update_epoch_meter('val_time', val_end_time - val_start_time)
         # print val meters
         self.print_epoch_meters('val')
         # tensorboard plt meters
@@ -279,6 +283,7 @@ class EasyTrainingDDP(_BaseEasyTraining):
 
             # epoch time meter
             self.register_epoch_meter('epoch_time', 'train', '{:.2f} (s)', plt=False)
+            self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
             # lr meter
             if self.nn.scheduler is not None:
                 self.register_epoch_meter('lr', 'train', '{:.2e}')
@@ -326,7 +331,10 @@ class EasyTrainingDDP(_BaseEasyTraining):
             # print train meters
             self.print_epoch_meters('train')
             # validate
+            val_start_time = time.time()
             self.validate()
+            val_end_time = time.time()
+            self.update_epoch_meter('val_time', val_end_time - val_start_time)
             # print val meters
             self.print_epoch_meters('val')
             # tensorboard plt meters
