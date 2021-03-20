@@ -1,4 +1,4 @@
-from .config import Config
+from .config import import_config
 from .nn_interface import NNInterface
 from .easytraining import EasyTraining, EasyTrainingDDP
 from .easyinfer import EasyInfer

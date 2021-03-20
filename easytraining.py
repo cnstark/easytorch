@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from .nn_interface import NNInterface
 from .meter_pool import MeterPool
+from .config import config_md5, save_config
 
 
 class _BaseEasyTraining(metaclass=ABCMeta):
@@ -19,7 +20,7 @@ class _BaseEasyTraining(metaclass=ABCMeta):
         self.start_epoch = 0
 
         self.model_name = cfg.MODEL.NAME
-        self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, cfg.md5())
+        self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, config_md5(cfg))
         self.over_write_ckpt = cfg.TRAIN.OVERWRITE_CKPT
 
         self.nn = nn
@@ -52,13 +53,13 @@ class _BaseEasyTraining(metaclass=ABCMeta):
 
     def _create_optim(self, optim_cfg, model):
         Optim = getattr(optim, optim_cfg.TYPE)
-        optim_param = optim_cfg.PARAM.pure_dict()
+        optim_param = optim_cfg.PARAM.copy()
         optimizer = Optim(model.parameters(), **optim_param)
         self.nn.set_optim(optimizer)
 
     def _create_lr_scheduler(self, lr_scheduler_cfg, optim):
         Scheduler = getattr(lr_scheduler, lr_scheduler_cfg.TYPE)
-        scheduler_param = lr_scheduler_cfg.PARAM.pure_dict()
+        scheduler_param = lr_scheduler_cfg.PARAM.copy()
         scheduler_param['optimizer'] = optim
         scheduler = Scheduler(**scheduler_param)
         self.nn.set_scheduler(scheduler)
@@ -174,7 +175,7 @@ class EasyTraining(_BaseEasyTraining):
             self._load_model_resume()
         else:
             os.makedirs(self.ckpt_save_dir)
-            cfg.export(os.path.join(self.ckpt_save_dir, 'param.txt'))
+            save_config(cfg, os.path.join(self.ckpt_save_dir, 'param.txt'))
 
         # data loader
         self.train_data_loader = self.nn.define_train_data_loader(cfg)
@@ -265,7 +266,7 @@ class EasyTrainingDDP(_BaseEasyTraining):
         else:
             if self.rank == 0:
                 os.makedirs(self.ckpt_save_dir)
-                cfg.export(os.path.join(self.ckpt_save_dir, 'param.txt'))
+                save_config(cfg, os.path.join(self.ckpt_save_dir, 'param.txt'))
 
         # data loader
         self.train_data_loader = self.nn.define_train_data_loader_ddp(cfg, self.rank, self.world_size)
