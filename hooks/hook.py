@@ -48,20 +48,20 @@ class Hook:
     def after_val_iter(self, runner):
         pass
 
-    def every_n_epochs(self, runner, n):
+    def every_n_epochs(self, runner, n: int) -> bool:
         return (runner.epoch + 1) % n == 0 if n > 0 else False
 
-    def every_n_inner_iters(self, runner, n):
+    def every_n_inner_iters(self, runner, n: int) -> bool:
         return (runner.inner_iter + 1) % n == 0 if n > 0 else False
 
-    def every_n_iters(self, runner, n):
+    def every_n_iters(self, runner, n: int) -> bool:
         return (runner.iter + 1) % n == 0 if n > 0 else False
 
-    def end_of_epoch(self, runner):
+    def end_of_epoch(self, runner) -> bool:
         return runner.inner_iter + 1 == len(runner.data_loader)
 
-    def is_last_epoch(self, runner):
+    def is_last_epoch(self, runner) -> bool:
         return runner.epoch + 1 == runner._max_epochs
 
-    def is_last_iter(self, runner):
+    def is_last_iter(self, runner) -> bool:
         return runner.iter + 1 == runner._max_iters
