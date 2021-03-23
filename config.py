@@ -5,7 +5,14 @@ import hashlib
 MD5_EXCEPT_FLAG = '_md5_except'
 
 
-def except_dict_keys(cfg: dict, except_keys: list):
+DEFAULT_MD5_EXCEPT_KEYS = [
+    'TRAIN.OVERWRITE_CKPT',
+    'TRAIN.DATA.NUM_WORKERS',
+    'VAL'
+]
+
+
+def except_dict_keys(cfg: dict, except_keys: set):
     cfg_copy = cfg.copy()
 
     if cfg_copy.get(MD5_EXCEPT_FLAG) is not None:
@@ -19,7 +26,7 @@ def except_dict_keys(cfg: dict, except_keys: list):
             for except_key in except_keys:
                 if k == except_key:
                     pop_list.append(k)
-                elif except_key.find(k) == 0:
+                elif except_key.find(k) == 0 and except_key[len(k)] == '.':
                     sub_except_keys.append(except_key[len(k) + 1:])
             if len(sub_except_keys) != 0:
                 new_v = except_dict_keys(v, sub_except_keys)
@@ -29,11 +36,11 @@ def except_dict_keys(cfg: dict, except_keys: list):
                 if k == except_key:
                     pop_list.append(k)
 
-    for pop_key in pop_list:
-        cfg_copy.pop(pop_key)
-
     for dict_key, dict_value in dict_list:
         cfg_copy[dict_key] = dict_value
+
+    for pop_key in pop_list:
+        cfg_copy.pop(pop_key)
 
     return cfg_copy
 
@@ -77,6 +84,15 @@ def import_config(path: str, verbose: bool=True):
         path = path[:path.find('.py')].replace('/', '.')
     cfg_name = path.split('.')[-1]
     cfg = __import__(path, fromlist=[cfg_name]).CFG
+
+    # merge default md5 except keys
+    if cfg.get(MD5_EXCEPT_FLAG) is None:
+        cfg[MD5_EXCEPT_FLAG] = set([])
+    else:
+        cfg[MD5_EXCEPT_FLAG] = set(cfg[MD5_EXCEPT_FLAG])
+    for k in DEFAULT_MD5_EXCEPT_KEYS:
+        cfg[MD5_EXCEPT_FLAG].add(k)
+
     if verbose:
         print_config(cfg)
     return cfg
