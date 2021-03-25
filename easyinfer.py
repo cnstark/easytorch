@@ -6,11 +6,12 @@ from abc import ABCMeta, abstractmethod
 import torch
 
 from .nn_interface import NNInterface
+from .config import config_md5
 
 class EasyInfer:
     def __init__(self, cfg, nn: NNInterface):
         self.model_name = cfg.MODEL.NAME
-        self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, cfg.md5())
+        self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, config_md5(cfg))
 
         self.nn = nn
 
