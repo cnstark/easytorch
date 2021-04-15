@@ -20,9 +20,8 @@ class AvgMeter(object):
 
 
 class MeterPool:
-    def __init__(self, tensorboard_writer):
+    def __init__(self):
         self._pool = {}
-        self._tensorboard_writer = tensorboard_writer
 
     def register(self, name, meter_type, fmt='{:f}', plt=True):
         if meter_type not in METER_TYPES:
@@ -52,10 +51,10 @@ class MeterPool:
         print_str = '{}:: [{}]'.format(meter_type, ', '.join(print_list))
         print(print_str)
 
-    def plt_meters(self, epoch):
+    def plt_meters(self, epoch, tensorboard_writer):
         for name, value in self._pool.items():
             if value['plt']:
-                self._tensorboard_writer.add_scalar(name, value['meter'].avg, global_step=epoch)
+                tensorboard_writer.add_scalar(name, value['meter'].avg, global_step=epoch)
 
     def reset(self):
         for _, value in self._pool.items():
@@ -64,8 +63,6 @@ class MeterPool:
 
 class MeterPoolDDP(MeterPool):
     # TODO(Yuhao Wang): not support
-    def __init__(self, tensorboard_writer, rank, world_size):
-        super(MeterPoolDDP, self).__init__(tensorboard_writer)
 
     def to_tensor(self):
         tensor = torch.empty((len(self._pool.keys()), 2))
