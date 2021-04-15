@@ -14,7 +14,7 @@ from .config import config_md5, save_config
 from.utils.dist import *
 
 
-class EasyTraining(metaclass=ABCMeta):
+class Runner(metaclass=ABCMeta):
     def __init__(self, cfg):
         if torch.distributed.is_initialized():
             torch.cuda.set_device(get_rank())
