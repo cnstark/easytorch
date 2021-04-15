@@ -21,7 +21,7 @@ class NNInterface(metaclass=ABCMeta):
         pass
 
     @abstractstaticmethod
-    def define_train_data_loader_ddp(cfg, rank, world_size):
+    def define_train_data_loader_ddp(cfg):
         pass
 
     @abstractstaticmethod
