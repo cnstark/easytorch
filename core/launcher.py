@@ -5,8 +5,8 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-from .config import import_config
-from .utils import set_gpus, set_tf32_mode
+from ..config import import_config
+from ..utils import set_gpus, set_tf32_mode
 
 
 def train(cfg: dict, tf32_mode: str):

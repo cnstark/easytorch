@@ -10,15 +10,12 @@ from torch.optim import lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
 
 from .meter_pool import MeterPool
-from .config import config_md5, save_config
-from.utils.dist import *
+from ..config import config_md5, save_config
+from .dist import *
 
 
 class Runner(metaclass=ABCMeta):
     def __init__(self, cfg):
-        if torch.distributed.is_initialized():
-            torch.cuda.set_device(get_rank())
-
         self.num_epochs = cfg.TRAIN.NUM_EPOCHS
         self.start_epoch = 0
 
