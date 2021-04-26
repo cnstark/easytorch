@@ -103,12 +103,18 @@ class Runner(metaclass=ABCMeta):
             self.start_epoch = checkpoint_dict['epoch']
             if self.scheduler is not None:
                 self.scheduler.last_epoch = checkpoint_dict['epoch']
+            self.logger.info('resume training')
         except (IndexError, OSError, KeyError):
             pass
 
-    def load_model_finetune(self, ckpt_path):
-        # TODO
-        pass
+    def _load_model_finetune(self, ckpt_path):
+        self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
+        checkpoint_dict = torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
+        if isinstance(self.model, DDP):
+            self.model.module.load_state_dict(checkpoint_dict['model_state_dict'])
+        else:
+            self.model.load_state_dict(checkpoint_dict['model_state_dict'])
+        self.logger.info('start finetuning')
 
     def load_model_inference(self):
         try:
@@ -169,6 +175,10 @@ class Runner(metaclass=ABCMeta):
             self.scheduler = self._create_lr_scheduler(cfg.TRAIN.LR_SCHEDULER, self.optim)
             self.logger.info('set lr_scheduler: ' + str(self.scheduler))
             self.register_epoch_meter('lr', 'train', '{:.2e}')
+
+        # finetune
+        if hasattr(cfg.TRAIN, 'FINETUNE_FROM'):
+            self._load_model_finetune(cfg.TRAIN.FINETUNE_FROM)
 
         # resume
         self._load_model_resume()
