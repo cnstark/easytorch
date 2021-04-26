@@ -40,7 +40,7 @@ class MeterPool:
     def get_avg(self, name):
         return self._pool[name]['meter'].avg
 
-    def print_meters(self, meter_type):
+    def print_meters(self, meter_type, logger=None):
         print_list = []
         for i in range(len(self._pool.keys())):
             for name, value in self._pool.items():
@@ -49,7 +49,10 @@ class MeterPool:
                         ('{}: ' + value['format']).format(name, value['meter'].avg)
                     )
         print_str = '{}:: [{}]'.format(meter_type, ', '.join(print_list))
-        print(print_str)
+        if logger is None:
+            print(print_str)
+        else:
+            logger.info(print_str)
 
     def plt_meters(self, epoch, tensorboard_writer):
         for name, value in self._pool.items():

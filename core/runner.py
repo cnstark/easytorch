@@ -11,7 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from .meter_pool import MeterPool
 from ..config import config_md5, save_config
-from .dist import *
+from ..utils import get_logger, get_rank, is_master, master_only
 
 
 class Runner(metaclass=ABCMeta):
@@ -104,8 +104,7 @@ class Runner(metaclass=ABCMeta):
             if self.scheduler is not None:
                 self.scheduler.last_epoch = checkpoint_dict['epoch']
         except (IndexError, OSError, KeyError):
-            if is_master():
-                print('Resume failed, keeping training')
+            pass
 
     def load_model_finetune(self, ckpt_path):
         # TODO
@@ -120,6 +119,7 @@ class Runner(metaclass=ABCMeta):
 
     def _load_checkpoint(self):
         ckpt_path = self._get_ckpt_path()
+        self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
         return torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
 
     def _save_checkpoint(self, epoch, checkpoint_dict):
@@ -149,21 +149,29 @@ class Runner(metaclass=ABCMeta):
         return ckpt_list[-1]
 
     def train(self, cfg):
+        # make ckpt_save_dir
+        if is_master() and not os.path.isdir(self.ckpt_save_dir):
+            os.makedirs(self.ckpt_save_dir)
+            save_config(cfg, os.path.join(self.ckpt_save_dir, 'param.txt'))
+
+        log_file_name = 'training_log_{}.log'.format(time.strftime("%Y%m%d%H%M%S", time.localtime()))
+        self.logger = get_logger('easytorch-training', log_file=os.path.join(self.ckpt_save_dir, log_file_name))
+
+        # self.logger.info('training config:\n{}'.format(config_str(cfg)))
+        self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
+
         # create optim
         self.optim = self._create_optim(cfg.TRAIN.OPTIM, self.model)
+        self.logger.info('set optim: ' + str(self.optim))
 
         # create lr_scheduler
         if hasattr(cfg.TRAIN, 'LR_SCHEDULER'):
             self.scheduler = self._create_lr_scheduler(cfg.TRAIN.LR_SCHEDULER, self.optim)
+            self.logger.info('set lr_scheduler: ' + str(self.scheduler))
             self.register_epoch_meter('lr', 'train', '{:.2e}')
 
         # resume
-        if os.path.isdir(self.ckpt_save_dir):
-            self._load_model_resume()
-        else:
-            if is_master():
-                os.makedirs(self.ckpt_save_dir)
-                save_config(cfg, os.path.join(self.ckpt_save_dir, 'param.txt'))
+        self._load_model_resume()
 
         if is_master():
             self.tensorboard_writer = SummaryWriter(
@@ -213,7 +221,7 @@ class Runner(metaclass=ABCMeta):
     @master_only
     def _on_epoch_start(self, epoch):
         # print epoch num
-        print('EPOCH {:d} / {:d}'.format(epoch, self.num_epochs))
+        self.logger.info('epoch {:d} / {:d}'.format(epoch, self.num_epochs))
         # update lr meter
         if self.scheduler is not None:
             self.update_epoch_meter('lr', self.scheduler.get_lr()[0])
@@ -252,7 +260,7 @@ class Runner(metaclass=ABCMeta):
 
     @master_only
     def print_epoch_meters(self, meter_type):
-        self._meter_pool.print_meters(meter_type)
+        self._meter_pool.print_meters(meter_type, self.logger)
 
     @master_only
     def plt_epoch_meters(self, epoch):
