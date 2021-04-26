@@ -21,7 +21,7 @@ class Runner(metaclass=ABCMeta):
 
         self.model_name = cfg.MODEL.NAME
         self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, config_md5(cfg))
-        self.over_write_ckpt = cfg.TRAIN.OVERWRITE_CKPT
+        self.ckpt_save_strategy = cfg.TRAIN.CKPT_SAVE_STRATEGY if hasattr(cfg.TRAIN, 'CKPT_SAVE_STRATEGY') else None
 
         # create model
         self.model = self._create_model(cfg)
@@ -135,25 +135,36 @@ class Runner(metaclass=ABCMeta):
         return torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
 
     def _save_checkpoint(self, epoch, checkpoint_dict):
-        if self.over_write_ckpt:
-            self._backup_checkpoint()
+        last_epoch = epoch - 1
+
+        # ckpt save strategy
+        if self.ckpt_save_strategy is None:
+            remove_last_epoch = True
+        elif isinstance(self.ckpt_save_strategy, int) and last_epoch % self.ckpt_save_strategy != 0:
+            remove_last_epoch = True
+        elif isinstance(self.ckpt_save_strategy, list) and not last_epoch in self.ckpt_save_strategy:
+            remove_last_epoch = True
+        else:
+            remove_last_epoch = False
+
+        # rename last ckpt to .bak
+        if remove_last_epoch:
+            last_epoch_str = str(last_epoch).zfill(len(str(self.num_epochs)))
+            last_ckpt_name = '{}_{}.pt'.format(self.model_name, last_epoch_str)
+            last_ckpt_path = os.path.join(self.ckpt_save_dir, last_ckpt_name)
+            os.rename(last_ckpt_path, last_ckpt_path + '.bak')
+
+        # save ckpt
         epoch_str = str(epoch).zfill(len(str(self.num_epochs)))
         checkpoint_name = '{}_{}.pt'.format(self.model_name, epoch_str)
         checkpoint_path = os.path.join(self.ckpt_save_dir, checkpoint_name)
         torch.save(checkpoint_dict, checkpoint_path)
-        if self.over_write_ckpt:
-            self._clear_checkpoint()
 
-    def _clear_checkpoint(self):
-        ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt.bak'))
-        for ckpt in ckpt_list:
-            os.remove(ckpt)
-
-    def _backup_checkpoint(self):
-        ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt'))
-        for ckpt in ckpt_list:
-            ckpt_bak = ckpt + '.bak'
-            os.rename(ckpt, ckpt_bak)
+        # clear ckpt every 10 epoch
+        if epoch % 10 == 0:
+            ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt.bak'))
+            for ckpt in ckpt_list:
+                os.remove(ckpt)
 
     def _get_ckpt_path(self):
         ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt'))
