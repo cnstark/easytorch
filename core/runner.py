@@ -159,9 +159,10 @@ class Runner(metaclass=ABCMeta):
         checkpoint_name = '{}_{}.pt'.format(self.model_name, epoch_str)
         checkpoint_path = os.path.join(self.ckpt_save_dir, checkpoint_name)
         torch.save(checkpoint_dict, checkpoint_path)
+        self.logger.info('ckpt {} saved'.format(checkpoint_path))
 
-        # clear ckpt every 10 epoch
-        if epoch % 10 == 0:
+        # clear ckpt every 10 epoch or in the end
+        if epoch % 10 == 0 or epoch == self.num_epochs:
             ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt.bak'))
             for ckpt in ckpt_list:
                 os.remove(ckpt)
