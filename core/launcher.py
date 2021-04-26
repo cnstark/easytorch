@@ -1,12 +1,14 @@
+import os
 import random
-import types
+import time
+import logging
 
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
 from ..config import import_config
-from ..utils import set_gpus, set_tf32_mode
+from ..utils import set_gpus, set_tf32_mode, get_logger
 
 
 def train(cfg: dict, tf32_mode: str):
@@ -69,13 +71,24 @@ def launch_training(cfg_path: str, gpus: str, tf32_mode: bool):
         )
 
 
-def launch_inference_runner(cfg_path: str, gpus: str, tf32_mode: bool):
+def launch_inference_runner(
+        cfg_path: str, gpus: str, tf32_mode: bool, logger: logging.Logger=None,
+        logger_name: str=None, log_file_name: str='easytorch_running_log', log_level: int=logging.INFO
+    ):
     cfg = import_config(cfg_path)
     set_gpus(gpus)
     set_tf32_mode(tf32_mode)
 
     Runner = cfg.RUNNER
     runner = Runner(cfg)
+
+    if logger is not None:
+        runner.logger = logger
+    elif logger_name is not None:
+        log_file_name = '{}_{}.log'.format(log_file_name, time.strftime("%Y%m%d%H%M%S", time.localtime()))
+        runner.logger = get_logger(logger_name, log_file=os.path.join(runner.ckpt_save_dir, log_file_name))
+    else:
+        runner.logger = get_logger('easytorch-inference')
 
     runner.model.eval()
 
