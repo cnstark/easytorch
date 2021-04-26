@@ -31,7 +31,13 @@ class Runner(metaclass=ABCMeta):
             self.train_data_loader = self.define_train_data_loader_ddp(cfg)
         else:
             self.train_data_loader = self.define_train_data_loader(cfg)
-        self.val_data_loader = self.define_val_data_loader(cfg)
+
+        # val config
+        if hasattr(cfg, 'VAL'):
+            self.val_interval = cfg.VAL.INTERVAL if hasattr(cfg.VAL, 'INTERVAL') else 1
+            self.val_data_loader = self.define_val_data_loader(cfg)
+        else:
+            self.val_data_loader = None
 
         # init meter_pool
         if is_master():
@@ -243,12 +249,13 @@ class Runner(metaclass=ABCMeta):
         # print train meters
         self.print_epoch_meters('train')
         # validate
-        val_start_time = time.time()
-        self.validate()
-        val_end_time = time.time()
-        self.update_epoch_meter('val_time', val_end_time - val_start_time)
-        # print val meters
-        self.print_epoch_meters('val')
+        if self.val_data_loader is not None and epoch % self.val_interval == 0:
+            val_start_time = time.time()
+            self.validate()
+            val_end_time = time.time()
+            self.update_epoch_meter('val_time', val_end_time - val_start_time)
+            # print val meters
+            self.print_epoch_meters('val')
         # tensorboard plt meters
         self.plt_epoch_meters(epoch)
         # save model
