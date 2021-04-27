@@ -12,6 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from .meter_pool import MeterPool
 from ..config import config_md5, save_config
 from ..utils import get_logger, get_rank, is_master, master_only
+from ..easyoptim import easy_lr_scheduler
 
 
 class Runner(metaclass=ABCMeta):
@@ -79,7 +80,10 @@ class Runner(metaclass=ABCMeta):
 
     @staticmethod
     def _create_lr_scheduler(lr_scheduler_cfg, optim):
-        Scheduler = getattr(lr_scheduler, lr_scheduler_cfg.TYPE)
+        if hasattr(lr_scheduler, lr_scheduler_cfg.TYPE):
+            Scheduler = getattr(lr_scheduler, lr_scheduler_cfg.TYPE)
+        else:
+            Scheduler = getattr(easy_lr_scheduler, lr_scheduler_cfg.TYPE)
         scheduler_param = lr_scheduler_cfg.PARAM.copy()
         scheduler_param['optimizer'] = optim
         scheduler = Scheduler(**scheduler_param)
