@@ -152,7 +152,7 @@ class Runner(metaclass=ABCMeta):
             remove_last_epoch = False
 
         # rename last ckpt to .bak
-        if remove_last_epoch:
+        if remove_last_epoch and last_epoch != 0:
             last_epoch_str = str(last_epoch).zfill(len(str(self.num_epochs)))
             last_ckpt_name = '{}_{}.pt'.format(self.model_name, last_epoch_str)
             last_ckpt_path = os.path.join(self.ckpt_save_dir, last_ckpt_name)
