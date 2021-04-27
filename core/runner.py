@@ -17,12 +17,8 @@ from ..easyoptim import easy_lr_scheduler
 
 class Runner(metaclass=ABCMeta):
     def __init__(self, cfg):
-        self.num_epochs = cfg.TRAIN.NUM_EPOCHS
-        self.start_epoch = 0
-
         self.model_name = cfg.MODEL.NAME
         self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, config_md5(cfg))
-        self.ckpt_save_strategy = cfg.TRAIN.CKPT_SAVE_STRATEGY if hasattr(cfg.TRAIN, 'CKPT_SAVE_STRATEGY') else None
 
         # create model
         self.model = self._create_model(cfg)
@@ -43,10 +39,6 @@ class Runner(metaclass=ABCMeta):
         # init meter_pool
         if is_master():
             self._meter_pool = MeterPool()
-
-        # init time meter
-        self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
-        self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
 
     @abstractstaticmethod
     def define_model(cfg):
@@ -177,39 +169,7 @@ class Runner(metaclass=ABCMeta):
         return ckpt_list[-1]
 
     def train(self, cfg):
-        # make ckpt_save_dir
-        if is_master() and not os.path.isdir(self.ckpt_save_dir):
-            os.makedirs(self.ckpt_save_dir)
-            save_config(cfg, os.path.join(self.ckpt_save_dir, 'param.txt'))
-
-        log_file_name = 'training_log_{}.log'.format(time.strftime("%Y%m%d%H%M%S", time.localtime()))
-        self.logger = get_logger('easytorch-training', log_file=os.path.join(self.ckpt_save_dir, log_file_name))
-
-        # self.logger.info('training config:\n{}'.format(config_str(cfg)))
-        self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
-
-        # create optim
-        self.optim = self._create_optim(cfg.TRAIN.OPTIM, self.model)
-        self.logger.info('set optim: ' + str(self.optim))
-
-        # create lr_scheduler
-        if hasattr(cfg.TRAIN, 'LR_SCHEDULER'):
-            self.scheduler = self._create_lr_scheduler(cfg.TRAIN.LR_SCHEDULER, self.optim)
-            self.logger.info('set lr_scheduler: ' + str(self.scheduler))
-            self.register_epoch_meter('lr', 'train', '{:.2e}')
-
-        # finetune
-        if hasattr(cfg.TRAIN, 'FINETUNE_FROM'):
-            self._load_model_finetune(cfg.TRAIN.FINETUNE_FROM)
-
-        # resume
-        self._load_model_resume()
-
-        if is_master():
-            self.tensorboard_writer = SummaryWriter(
-                os.path.join(self.ckpt_save_dir, 'tensorboard'),
-                purge_step=(self.start_epoch + 1) if self.start_epoch != 0 else None
-            )
+        self.before_train(cfg)
 
         # train loop
         for epoch_index in range(self.start_epoch, self.num_epochs):
@@ -249,6 +209,50 @@ class Runner(metaclass=ABCMeta):
     @abstractmethod
     def val_iters(self, iter_index, data):
         pass
+
+    def before_train(self, cfg):
+        # make ckpt_save_dir
+        if is_master() and not os.path.isdir(self.ckpt_save_dir):
+            os.makedirs(self.ckpt_save_dir)
+            save_config(cfg, os.path.join(self.ckpt_save_dir, 'param.txt'))
+
+        # init logger
+        log_file_name = 'training_log_{}.log'.format(time.strftime("%Y%m%d%H%M%S", time.localtime()))
+        self.logger = get_logger('easytorch-training', log_file=os.path.join(self.ckpt_save_dir, log_file_name))
+
+        self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
+
+        self.num_epochs = cfg.TRAIN.NUM_EPOCHS
+        self.start_epoch = 0
+        self.ckpt_save_strategy = cfg.TRAIN.CKPT_SAVE_STRATEGY if hasattr(cfg.TRAIN, 'CKPT_SAVE_STRATEGY') else None
+
+        # init time meter
+        self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
+        self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
+
+        # create optim
+        self.optim = self._create_optim(cfg.TRAIN.OPTIM, self.model)
+        self.logger.info('set optim: ' + str(self.optim))
+
+        # create lr_scheduler
+        if hasattr(cfg.TRAIN, 'LR_SCHEDULER'):
+            self.scheduler = self._create_lr_scheduler(cfg.TRAIN.LR_SCHEDULER, self.optim)
+            self.logger.info('set lr_scheduler: ' + str(self.scheduler))
+            self.register_epoch_meter('lr', 'train', '{:.2e}')
+
+        # finetune
+        if hasattr(cfg.TRAIN, 'FINETUNE_FROM'):
+            self._load_model_finetune(cfg.TRAIN.FINETUNE_FROM)
+
+        # resume
+        self._load_model_resume()
+
+        # init tensorboard(after resume)
+        if is_master():
+            self.tensorboard_writer = SummaryWriter(
+                os.path.join(self.ckpt_save_dir, 'tensorboard'),
+                purge_step=(self.start_epoch + 1) if self.start_epoch != 0 else None
+            )
 
     @master_only
     def _on_epoch_start(self, epoch):
