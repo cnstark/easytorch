@@ -79,8 +79,11 @@ class MultiCosineAnnealingWarmupLR(_LRScheduler):
                           "please use `get_last_lr()`.", UserWarning)
 
         if self.last_epoch <= self.warmup_begin:
-            lr = [(base_lr - self.warmup_factor * base_lr) * (self.last_epoch/self.warmup_begin) + self.warmup_factor * base_lr
-                  for base_lr in self.base_lrs]
+            if self.warmup_begin != 0:
+                lr = [(base_lr - self.warmup_factor * base_lr) * (self.last_epoch/self.warmup_begin) + self.warmup_factor * base_lr
+                      for base_lr in self.base_lrs]
+            else:
+                lr = [base_lr for base_lr in self.base_lrs]
         else:
             lr = [self.eta_min + (self.lr_mult * base_lr - self.eta_min) * (1 + math.cos(math.pi * self.T_cur / self.T_i)) / 2
                     for base_lr in self.base_lrs]
