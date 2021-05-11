@@ -104,7 +104,9 @@ class Runner(metaclass=ABCMeta):
 
     def _load_model_resume(self):
         try:
-            checkpoint_dict = self._load_checkpoint()
+            ckpt_path = self._get_ckpt_path()
+            self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
+            checkpoint_dict = torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
             if isinstance(self.model, DDP):
                 self.model.module.load_state_dict(checkpoint_dict['model_state_dict'])
             else:
@@ -126,17 +128,15 @@ class Runner(metaclass=ABCMeta):
             self.model.load_state_dict(checkpoint_dict['model_state_dict'])
         self.logger.info('start finetuning')
 
-    def load_model_inference(self):
+    def load_model_inference(self, ckpt_path=None):
         try:
-            checkpoint_dict = self._load_checkpoint()
+            if ckpt_path is None:
+                ckpt_path = self._get_ckpt_path()
+            self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
+            checkpoint_dict = torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
             self.model.load_state_dict(checkpoint_dict['model_state_dict'])
         except (IndexError, OSError, KeyError):
             raise OSError('ckpt file does not exist')
-
-    def _load_checkpoint(self):
-        ckpt_path = self._get_ckpt_path()
-        self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
-        return torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
 
     def _save_checkpoint(self, epoch, checkpoint_dict):
         last_epoch = epoch - 1
