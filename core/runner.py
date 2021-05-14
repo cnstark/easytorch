@@ -102,15 +102,13 @@ class Runner(metaclass=ABCMeta):
         }
         self._save_checkpoint(epoch, checkpoint_dict)
 
-    def _load_model_resume(self):
+    def _load_model_resume(self, strict=True):
         try:
-            ckpt_path = self._get_ckpt_path()
-            self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
-            checkpoint_dict = torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
+            checkpoint_dict = self._load_checkpoint()
             if isinstance(self.model, DDP):
-                self.model.module.load_state_dict(checkpoint_dict['model_state_dict'])
+                self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             else:
-                self.model.load_state_dict(checkpoint_dict['model_state_dict'])
+                self.model.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             self.optim.load_state_dict(checkpoint_dict['optim_state_dict'])
             self.start_epoch = checkpoint_dict['epoch']
             if self.scheduler is not None:
@@ -119,24 +117,26 @@ class Runner(metaclass=ABCMeta):
         except (IndexError, OSError, KeyError):
             pass
 
-    def _load_model_finetune(self, ckpt_path):
-        self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
-        checkpoint_dict = torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
+    def _load_model_finetune(self, ckpt_path, strict=True):
+        checkpoint_dict = self._load_checkpoint(ckpt_path)
         if isinstance(self.model, DDP):
-            self.model.module.load_state_dict(checkpoint_dict['model_state_dict'])
+            self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
         else:
-            self.model.load_state_dict(checkpoint_dict['model_state_dict'])
+            self.model.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
         self.logger.info('start finetuning')
 
-    def load_model_inference(self, ckpt_path=None):
+    def load_model_inference(self, ckpt_path=None, strict=True):
         try:
-            if ckpt_path is None:
-                ckpt_path = self._get_ckpt_path()
-            self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
-            checkpoint_dict = torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
-            self.model.load_state_dict(checkpoint_dict['model_state_dict'])
+            checkpoint_dict = self._load_checkpoint(ckpt_path)
+            self.model.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
         except (IndexError, OSError, KeyError):
             raise OSError('ckpt file does not exist')
+
+    def _load_checkpoint(self, ckpt_path=None):
+        if ckpt_path is None:
+            ckpt_path = self._get_ckpt_path()
+        self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
+        return torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
 
     def _save_checkpoint(self, epoch, checkpoint_dict):
         last_epoch = epoch - 1
