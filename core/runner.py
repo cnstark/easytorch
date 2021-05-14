@@ -279,9 +279,11 @@ class Runner(metaclass=ABCMeta):
         # reset meters
         self.reset_epoch_meters()
 
-    @abstractmethod
     def on_training_end(self):
-        pass
+        if is_master():
+            # close tensorboard writer
+            self.tensorboard_writer.close()
+            self.logger.info('tensorboard_writer closed')
 
     @master_only
     def register_epoch_meter(self, name, meter_type, fmt='{:f}', plt=True):
