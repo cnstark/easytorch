@@ -58,6 +58,7 @@ class MeterPool:
         for name, value in self._pool.items():
             if value['plt']:
                 tensorboard_writer.add_scalar(name, value['meter'].avg, global_step=epoch)
+        tensorboard_writer.flush()
 
     def reset(self):
         for _, value in self._pool.items():
