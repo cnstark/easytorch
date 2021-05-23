@@ -217,21 +217,11 @@ class Runner(metaclass=ABCMeta):
         pass
 
     def init_training(self, cfg):
-        # data loader
-        if torch.distributed.is_initialized():
-            self.train_data_loader = self.define_train_data_loader_ddp(cfg)
-        else:
-            self.train_data_loader = self.define_train_data_loader(cfg)
-
-        # val config and val data loader
-        if hasattr(cfg, 'VAL'):
-            if hasattr(cfg.VAL, 'INTERVAL'):
-                self.val_interval = cfg.VAL.INTERVAL
-            self.val_data_loader = self.define_val_data_loader(cfg)
-
-        # init meter_pool
-        if is_master():
-            self._meter_pool = MeterPool()
+        # init training param
+        self.num_epochs = cfg.TRAIN.NUM_EPOCHS
+        self.start_epoch = 0
+        if hasattr(cfg.TRAIN, 'CKPT_SAVE_STRATEGY'):
+            self.ckpt_save_strategy = cfg.TRAIN.CKPT_SAVE_STRATEGY
 
         # make ckpt_save_dir
         if is_master() and not os.path.isdir(self.ckpt_save_dir):
@@ -244,15 +234,23 @@ class Runner(metaclass=ABCMeta):
 
         self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
 
-        # init training param
-        self.num_epochs = cfg.TRAIN.NUM_EPOCHS
-        self.start_epoch = 0
-        if hasattr(cfg.TRAIN, 'CKPT_SAVE_STRATEGY'):
-            self.ckpt_save_strategy = cfg.TRAIN.CKPT_SAVE_STRATEGY
+        # init meter_pool
+        if is_master():
+            self._meter_pool = MeterPool()
 
-        # init time meter
+        # train data loader
+        if torch.distributed.is_initialized():
+            self.train_data_loader = self.define_train_data_loader_ddp(cfg)
+        else:
+            self.train_data_loader = self.define_train_data_loader(cfg)
         self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
-        self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
+
+        # val config and val data loader
+        if hasattr(cfg, 'VAL'):
+            if hasattr(cfg.VAL, 'INTERVAL'):
+                self.val_interval = cfg.VAL.INTERVAL
+            self.val_data_loader = self.define_val_data_loader(cfg)
+            self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
 
         # create optim
         self.optim = self._create_optim(cfg.TRAIN.OPTIM, self.model)
