@@ -17,28 +17,34 @@ from ..easyoptim import easy_lr_scheduler
 
 class Runner(metaclass=ABCMeta):
     def __init__(self, cfg):
+        # param
         self.model_name = cfg.MODEL.NAME
         self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, config_md5(cfg))
+        self.ckpt_save_strategy = None
+        self.num_epochs = None
+        self.start_epoch = None
+
+        self.val_interval = 1
+
+        # default logger
+        self.logger = get_logger('easytorch')
 
         # create model
         self.model = self._create_model(cfg)
 
-        # data loader
-        if torch.distributed.is_initialized():
-            self.train_data_loader = self.define_train_data_loader_ddp(cfg)
-        else:
-            self.train_data_loader = self.define_train_data_loader(cfg)
+        # declare optimizer and lr_scheduler
+        self.optim = None
+        self.scheduler = None
 
-        # val config
-        if hasattr(cfg, 'VAL'):
-            self.val_interval = cfg.VAL.INTERVAL if hasattr(cfg.VAL, 'INTERVAL') else 1
-            self.val_data_loader = self.define_val_data_loader(cfg)
-        else:
-            self.val_data_loader = None
+        # declare data loader
+        self.train_data_loader = None
+        self.val_data_loader = None
 
-        # init meter_pool
-        if is_master():
-            self._meter_pool = MeterPool()
+        # declare meter pool
+        self._meter_pool = None
+
+        # declare tensorboard_writer
+        self.tensorboard_writer = None
 
     @abstractstaticmethod
     def define_model(cfg):
@@ -169,7 +175,7 @@ class Runner(metaclass=ABCMeta):
         return ckpt_list[-1]
 
     def train(self, cfg):
-        self.before_train(cfg)
+        self.init_training(cfg)
 
         # train loop
         for epoch_index in range(self.start_epoch, self.num_epochs):
@@ -210,7 +216,23 @@ class Runner(metaclass=ABCMeta):
     def val_iters(self, iter_index, data):
         pass
 
-    def before_train(self, cfg):
+    def init_training(self, cfg):
+        # data loader
+        if torch.distributed.is_initialized():
+            self.train_data_loader = self.define_train_data_loader_ddp(cfg)
+        else:
+            self.train_data_loader = self.define_train_data_loader(cfg)
+
+        # val config and val data loader
+        if hasattr(cfg, 'VAL'):
+            if hasattr(cfg.VAL, 'INTERVAL'):
+                self.val_interval = cfg.VAL.INTERVAL
+            self.val_data_loader = self.define_val_data_loader(cfg)
+
+        # init meter_pool
+        if is_master():
+            self._meter_pool = MeterPool()
+
         # make ckpt_save_dir
         if is_master() and not os.path.isdir(self.ckpt_save_dir):
             os.makedirs(self.ckpt_save_dir)
@@ -222,9 +244,11 @@ class Runner(metaclass=ABCMeta):
 
         self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
 
+        # init training param
         self.num_epochs = cfg.TRAIN.NUM_EPOCHS
         self.start_epoch = 0
-        self.ckpt_save_strategy = cfg.TRAIN.CKPT_SAVE_STRATEGY if hasattr(cfg.TRAIN, 'CKPT_SAVE_STRATEGY') else None
+        if hasattr(cfg.TRAIN, 'CKPT_SAVE_STRATEGY'):
+            self.ckpt_save_strategy = cfg.TRAIN.CKPT_SAVE_STRATEGY
 
         # init time meter
         self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
