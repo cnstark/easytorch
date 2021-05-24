@@ -109,7 +109,7 @@ class Runner(metaclass=ABCMeta):
 
     def _load_model_resume(self, strict=True):
         try:
-            checkpoint_dict = load_ckpt(self.ckpt_save_dir, self.logger)
+            checkpoint_dict = load_ckpt(self.ckpt_save_dir, logger=self.logger)
             if isinstance(self.model, DDP):
                 self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             else:
@@ -124,7 +124,7 @@ class Runner(metaclass=ABCMeta):
 
     def load_model(self, ckpt_path=None, strict=True):
         try:
-            checkpoint_dict = load_ckpt(self.ckpt_save_dir, ckpt_path, self.logger)
+            checkpoint_dict = load_ckpt(self.ckpt_save_dir, ckpt_path=ckpt_path, logger=self.logger)
             if isinstance(self.model, DDP):
                 self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             else:
