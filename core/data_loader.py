@@ -4,7 +4,7 @@ from torch.utils.data.distributed import DistributedSampler
 from ..utils import get_rank, get_world_size
 
 
-def build_dataloader(dataset: Dataset, data_cfg: dict):
+def build_data_loader(dataset: Dataset, data_cfg: dict):
     if data_cfg.get('PREFETCH', False):
         from ..utils.data_prefetcher import DataLoaderX
         return DataLoaderX(
@@ -24,7 +24,7 @@ def build_dataloader(dataset: Dataset, data_cfg: dict):
         )
 
 
-def build_dataloader_ddp(dataset: Dataset, data_cfg: dict):
+def build_data_loader_ddp(dataset: Dataset, data_cfg: dict):
     ddp_sampler = DistributedSampler(
         dataset,
         get_world_size(),
