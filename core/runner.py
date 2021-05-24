@@ -1,6 +1,5 @@
 import os
 import time
-import glob
 from abc import ABCMeta, abstractmethod, abstractstaticmethod
 
 import torch
@@ -10,6 +9,7 @@ from torch.optim import lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
 
 from .meter_pool import MeterPool
+from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
 from ..config import config_md5, save_config
 from ..utils import get_logger, get_rank, is_master, master_only
 from ..easyoptim import easy_lr_scheduler
@@ -87,22 +87,29 @@ class Runner(metaclass=ABCMeta):
         scheduler = Scheduler(**scheduler_param)
         return scheduler
 
-    def _save_model(self, epoch):
-        if isinstance(self.model, DDP):
-            _model = self.model.module
-        else:
-            _model = self.model
+    def get_ckpt_path(self, epoch: int):
+        epoch_str = str(epoch).zfill(len(str(self.num_epochs)))
+        ckpt_name = '{}_{}.pt'.format(self.model_name, epoch_str)
+        return os.path.join(self.ckpt_save_dir, ckpt_name)
 
-        checkpoint_dict = {
-            'epoch': epoch,
-            'model_state_dict': _model.state_dict(),
-            'optim_state_dict': self.optim.state_dict()
-        }
-        self._save_checkpoint(epoch, checkpoint_dict)
+    def save_model(self, epoch):
+        ckpt_dict = get_ckpt_dict(self.model, self.optim, epoch)
+
+        # backup last epoch
+        last_ckpt_path = self.get_ckpt_path(epoch - 1)
+        backup_last_ckpt(last_ckpt_path, epoch, self.ckpt_save_strategy)
+
+        # save ckpt
+        ckpt_path = self.get_ckpt_path(epoch)
+        save_ckpt(ckpt_dict, ckpt_path, self.logger)
+
+        # clear ckpt every 10 epoch or in the end
+        if epoch % 10 == 0 or epoch == self.num_epochs:
+            clear_ckpt(self.ckpt_save_dir)
 
     def _load_model_resume(self, strict=True):
         try:
-            checkpoint_dict = self._load_checkpoint()
+            checkpoint_dict = load_ckpt(self.ckpt_save_dir, self.logger)
             if isinstance(self.model, DDP):
                 self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             else:
@@ -115,64 +122,15 @@ class Runner(metaclass=ABCMeta):
         except (IndexError, OSError, KeyError):
             pass
 
-    def _load_model_finetune(self, ckpt_path, strict=True):
-        checkpoint_dict = self._load_checkpoint(ckpt_path)
-        if isinstance(self.model, DDP):
-            self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
-        else:
-            self.model.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
-        self.logger.info('start finetuning')
-
-    def load_model_inference(self, ckpt_path=None, strict=True):
+    def load_model(self, ckpt_path=None, strict=True):
         try:
-            checkpoint_dict = self._load_checkpoint(ckpt_path)
-            self.model.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
-        except (IndexError, OSError, KeyError):
-            raise OSError('ckpt file does not exist')
-
-    def _load_checkpoint(self, ckpt_path=None):
-        if ckpt_path is None:
-            ckpt_path = self._get_ckpt_path()
-        self.logger.info('load ckpt from \'{}\''.format(ckpt_path))
-        return torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
-
-    def _save_checkpoint(self, epoch, checkpoint_dict):
-        last_epoch = epoch - 1
-
-        # ckpt save strategy
-        if self.ckpt_save_strategy is None:
-            remove_last_epoch = True
-        elif isinstance(self.ckpt_save_strategy, int) and last_epoch % self.ckpt_save_strategy != 0:
-            remove_last_epoch = True
-        elif isinstance(self.ckpt_save_strategy, list) and not last_epoch in self.ckpt_save_strategy:
-            remove_last_epoch = True
-        else:
-            remove_last_epoch = False
-
-        # rename last ckpt to .bak
-        if remove_last_epoch and last_epoch != 0:
-            last_epoch_str = str(last_epoch).zfill(len(str(self.num_epochs)))
-            last_ckpt_name = '{}_{}.pt'.format(self.model_name, last_epoch_str)
-            last_ckpt_path = os.path.join(self.ckpt_save_dir, last_ckpt_name)
-            os.rename(last_ckpt_path, last_ckpt_path + '.bak')
-
-        # save ckpt
-        epoch_str = str(epoch).zfill(len(str(self.num_epochs)))
-        checkpoint_name = '{}_{}.pt'.format(self.model_name, epoch_str)
-        checkpoint_path = os.path.join(self.ckpt_save_dir, checkpoint_name)
-        torch.save(checkpoint_dict, checkpoint_path)
-        self.logger.info('ckpt {} saved'.format(checkpoint_path))
-
-        # clear ckpt every 10 epoch or in the end
-        if epoch % 10 == 0 or epoch == self.num_epochs:
-            ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt.bak'))
-            for ckpt in ckpt_list:
-                os.remove(ckpt)
-
-    def _get_ckpt_path(self):
-        ckpt_list = glob.glob(os.path.join(self.ckpt_save_dir, '*.pt'))
-        ckpt_list.sort()
-        return ckpt_list[-1]
+            checkpoint_dict = load_ckpt(self.ckpt_save_dir, ckpt_path, self.logger)
+            if isinstance(self.model, DDP):
+                self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
+            else:
+                self.model.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
+        except (IndexError, OSError):
+            raise OSError('Ckpt file does not exist')
 
     def train(self, cfg):
         self.init_training(cfg)
@@ -264,7 +222,8 @@ class Runner(metaclass=ABCMeta):
 
         # finetune
         if hasattr(cfg.TRAIN, 'FINETUNE_FROM'):
-            self._load_model_finetune(cfg.TRAIN.FINETUNE_FROM)
+            self.load_model(cfg.TRAIN.FINETUNE_FROM)
+            self.logger.info('start finetuning')
 
         # resume
         self._load_model_resume()
@@ -301,7 +260,7 @@ class Runner(metaclass=ABCMeta):
         # tensorboard plt meters
         self.plt_epoch_meters(epoch)
         # save model
-        self._save_model(epoch)
+        self.save_model(epoch)
         # reset meters
         self.reset_epoch_meters()
 
