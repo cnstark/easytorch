@@ -4,17 +4,15 @@ from abc import ABCMeta, abstractmethod
 
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch import optim
-from torch.optim import lr_scheduler
-from torch.utils.data import dataset
 from torch.utils.tensorboard import SummaryWriter
 
 from .meter_pool import MeterPool
 from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
 from .data_loader import build_data_loader, build_data_loader_ddp
+from .optimizer_builder import build_optim, build_lr_scheduler
 from ..config import config_md5, save_config
 from ..utils import get_logger, get_rank, is_master, master_only
-from ..easyoptim import easy_lr_scheduler
+
 
 
 class Runner(metaclass=ABCMeta):
@@ -80,24 +78,6 @@ class Runner(metaclass=ABCMeta):
         if torch.distributed.is_initialized():
             model = DDP(model, device_ids=[get_rank()])
         return model
-
-    @staticmethod
-    def _create_optim(optim_cfg, model):
-        Optim = getattr(optim, optim_cfg.TYPE)
-        optim_param = optim_cfg.PARAM.copy()
-        optimizer = Optim(model.parameters(), **optim_param)
-        return optimizer
-
-    @staticmethod
-    def _create_lr_scheduler(lr_scheduler_cfg, optim):
-        if hasattr(lr_scheduler, lr_scheduler_cfg.TYPE):
-            Scheduler = getattr(lr_scheduler, lr_scheduler_cfg.TYPE)
-        else:
-            Scheduler = getattr(easy_lr_scheduler, lr_scheduler_cfg.TYPE)
-        scheduler_param = lr_scheduler_cfg.PARAM.copy()
-        scheduler_param['optimizer'] = optim
-        scheduler = Scheduler(**scheduler_param)
-        return scheduler
 
     def get_ckpt_path(self, epoch: int):
         epoch_str = str(epoch).zfill(len(str(self.num_epochs)))
@@ -220,12 +200,12 @@ class Runner(metaclass=ABCMeta):
             self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
 
         # create optim
-        self.optim = self._create_optim(cfg.TRAIN.OPTIM, self.model)
+        self.optim = build_optim(cfg.TRAIN.OPTIM, self.model)
         self.logger.info('set optim: ' + str(self.optim))
 
         # create lr_scheduler
         if hasattr(cfg.TRAIN, 'LR_SCHEDULER'):
-            self.scheduler = self._create_lr_scheduler(cfg.TRAIN.LR_SCHEDULER, self.optim)
+            self.scheduler = build_lr_scheduler(cfg.TRAIN.LR_SCHEDULER, self.optim)
             self.logger.info('set lr_scheduler: ' + str(self.scheduler))
             self.register_epoch_meter('lr', 'train', '{:.2e}')
 
