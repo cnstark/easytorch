@@ -1,15 +1,17 @@
 import os
 import time
-from abc import ABCMeta, abstractmethod, abstractstaticmethod
+from abc import ABCMeta, abstractmethod
 
 import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch import optim
 from torch.optim import lr_scheduler
+from torch.utils.data import dataset
 from torch.utils.tensorboard import SummaryWriter
 
 from .meter_pool import MeterPool
 from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
+from .data_loader import build_dataloader, build_dataloader_ddp
 from ..config import config_md5, save_config
 from ..utils import get_logger, get_rank, is_master, master_only
 from ..easyoptim import easy_lr_scheduler
@@ -46,21 +48,31 @@ class Runner(metaclass=ABCMeta):
         # declare tensorboard_writer
         self.tensorboard_writer = None
 
-    @abstractstaticmethod
+    @abstractmethod
+    @staticmethod
     def define_model(cfg):
         pass
 
-    @abstractstaticmethod
-    def define_train_data_loader(cfg):
+    @abstractmethod
+    @staticmethod
+    def build_train_dataset(cfg: dict):
         pass
 
-    @abstractstaticmethod
-    def define_train_data_loader_ddp(cfg):
+    @abstractmethod
+    @staticmethod
+    def build_val_dataset(cfg: dict):
         pass
 
-    @abstractstaticmethod
-    def define_val_data_loader(cfg):
-        pass
+    def build_train_dataloader(self, cfg: dict):
+        dataset = self.build_train_dataset(cfg)
+        if torch.distributed.is_initialized():
+            return build_dataloader_ddp(dataset, cfg.TRAIN.DATA)
+        else:
+            return build_dataloader(dataset, cfg.TRAIN.DATA)
+
+    def build_val_dataloader(self, cfg: dict):
+        dataset = self.build_val_dataset(cfg)
+        return build_dataloader(dataset, cfg.VAL.DATA)
 
     def _create_model(self, cfg):
         model = self.define_model(cfg)
@@ -197,17 +209,14 @@ class Runner(metaclass=ABCMeta):
             self._meter_pool = MeterPool()
 
         # train data loader
-        if torch.distributed.is_initialized():
-            self.train_data_loader = self.define_train_data_loader_ddp(cfg)
-        else:
-            self.train_data_loader = self.define_train_data_loader(cfg)
+        self.train_data_loader = self.build_train_dataloader(cfg)
         self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
 
         # val config and val data loader
         if hasattr(cfg, 'VAL'):
             if hasattr(cfg.VAL, 'INTERVAL'):
                 self.val_interval = cfg.VAL.INTERVAL
-            self.val_data_loader = self.define_val_data_loader(cfg)
+            self.val_data_loader = self.build_val_dataloader(cfg)
             self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
 
         # create optim
