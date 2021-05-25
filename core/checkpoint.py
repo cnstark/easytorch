@@ -56,7 +56,7 @@ def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = '*.pt') -> str:
     return ckpt_list[-1]
 
 
-def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = get_logger('easytorch')) -> object:
+def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = get_logger('easytorch')) -> dict:
     """Load checkpoint
     if param `ckpt_path` is None, load the last checkpoint in `ckpt_save_dir`,
     else load checkpoint from `ckpt_path`
@@ -67,7 +67,7 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = get_lo
         logger (Logger): logger, default is Logger('easytorch')
 
     Returns:
-        object: object loaded from file
+        checkpoint dict loaded from file
     """
 
     if ckpt_path is None:
