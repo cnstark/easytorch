@@ -29,7 +29,7 @@ class Runner(metaclass=ABCMeta):
         self.logger = get_logger('easytorch')
 
         # create model
-        self.model = self._create_model(cfg)
+        self.model = self.build_model(cfg)
 
         # declare optimizer and lr_scheduler
         self.optim = None
@@ -71,7 +71,7 @@ class Runner(metaclass=ABCMeta):
         dataset = self.build_val_dataset(cfg)
         return build_data_loader(dataset, cfg.VAL.DATA)
 
-    def _create_model(self, cfg):
+    def build_model(self, cfg):
         model = self.define_model(cfg)
         model = model.cuda()
         if torch.distributed.is_initialized():
@@ -131,7 +131,7 @@ class Runner(metaclass=ABCMeta):
             epoch = epoch_index + 1
             self._on_epoch_start(epoch)
             epoch_start_time = time.time()
-            # start traning
+            # start training
             self.model.train()
             for iter_index, data in enumerate(self.train_data_loader):
                 loss = self.train_iters(epoch, iter_index, data)
