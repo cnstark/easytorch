@@ -6,7 +6,7 @@ from ..utils import get_rank, get_world_size
 
 def build_data_loader(dataset: Dataset, data_cfg: dict):
     """Build dataloader from `data_cfg`
-    `data_cfg` is part of config which defines fields related to the data, such as `CFG.TRAIN.DATA`
+    `data_cfg` is part of config which defines fields about data, such as `CFG.TRAIN.DATA`
 
     structure of `data_cfg` is
     {
@@ -47,7 +47,7 @@ def build_data_loader(dataset: Dataset, data_cfg: dict):
 
 def build_data_loader_ddp(dataset: Dataset, data_cfg: dict):
     """Build ddp dataloader from `data_cfg`
-    `data_cfg` is part of config which defines fields related to the data, such as `CFG.TRAIN.DATA`
+    `data_cfg` is part of config which defines fields about data, such as `CFG.TRAIN.DATA`
 
     structure of `data_cfg` is
     {
