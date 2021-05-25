@@ -14,7 +14,6 @@ from ..config import config_md5, save_config
 from ..utils import get_logger, get_rank, is_master, master_only
 
 
-
 class Runner(metaclass=ABCMeta):
     def __init__(self, cfg):
         # param

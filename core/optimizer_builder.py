@@ -11,12 +11,12 @@ def build_optim(optim_cfg: dict, model: nn.Module):
     return optimizer
 
 
-def build_lr_scheduler(lr_scheduler_cfg: dict, optim: optim.Optimizer):
+def build_lr_scheduler(lr_scheduler_cfg: dict, optimizer: optim.Optimizer):
     if hasattr(lr_scheduler, lr_scheduler_cfg.TYPE):
         Scheduler = getattr(lr_scheduler, lr_scheduler_cfg.TYPE)
     else:
         Scheduler = getattr(easy_lr_scheduler, lr_scheduler_cfg.TYPE)
     scheduler_param = lr_scheduler_cfg.PARAM.copy()
-    scheduler_param['optimizer'] = optim
+    scheduler_param['optimizer'] = optimizer
     scheduler = Scheduler(**scheduler_param)
     return scheduler
