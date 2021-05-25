@@ -40,7 +40,7 @@ class Runner(metaclass=ABCMeta):
         self.val_data_loader = None
 
         # declare meter pool
-        self._meter_pool = None
+        self.meter_pool = None
 
         # declare tensorboard_writer
         self.tensorboard_writer = None
@@ -98,7 +98,7 @@ class Runner(metaclass=ABCMeta):
         if epoch % 10 == 0 or epoch == self.num_epochs:
             clear_ckpt(self.ckpt_save_dir)
 
-    def _load_model_resume(self, strict=True):
+    def load_model_resume(self, strict=True):
         try:
             checkpoint_dict = load_ckpt(self.ckpt_save_dir, logger=self.logger)
             if isinstance(self.model, DDP):
@@ -129,7 +129,7 @@ class Runner(metaclass=ABCMeta):
         # train loop
         for epoch_index in range(self.start_epoch, self.num_epochs):
             epoch = epoch_index + 1
-            self._on_epoch_start(epoch)
+            self.on_epoch_start(epoch)
             epoch_start_time = time.time()
             # start training
             self.model.train()
@@ -142,7 +142,7 @@ class Runner(metaclass=ABCMeta):
                 self.scheduler.step()
 
             epoch_end_time = time.time()
-            self._on_epoch_end(epoch, epoch_end_time - epoch_start_time)
+            self.on_epoch_end(epoch, epoch_end_time - epoch_start_time)
         self.on_training_end()
 
     @abstractmethod
@@ -185,7 +185,7 @@ class Runner(metaclass=ABCMeta):
 
         # init meter_pool
         if is_master():
-            self._meter_pool = MeterPool()
+            self.meter_pool = MeterPool()
 
         # train data loader
         self.train_data_loader = self.build_train_data_loader(cfg)
@@ -208,13 +208,13 @@ class Runner(metaclass=ABCMeta):
             self.logger.info('set lr_scheduler: ' + str(self.scheduler))
             self.register_epoch_meter('lr', 'train', '{:.2e}')
 
-        # finetune
+        # fine tune
         if hasattr(cfg.TRAIN, 'FINETUNE_FROM'):
             self.load_model(cfg.TRAIN.FINETUNE_FROM)
-            self.logger.info('start finetuning')
+            self.logger.info('start fine tuning')
 
         # resume
-        self._load_model_resume()
+        self.load_model_resume()
 
         # init tensorboard(after resume)
         if is_master():
@@ -224,7 +224,7 @@ class Runner(metaclass=ABCMeta):
             )
 
     @master_only
-    def _on_epoch_start(self, epoch):
+    def on_epoch_start(self, epoch):
         # print epoch num
         self.logger.info('epoch {:d} / {:d}'.format(epoch, self.num_epochs))
         # update lr meter
@@ -232,7 +232,7 @@ class Runner(metaclass=ABCMeta):
             self.update_epoch_meter('lr', self.scheduler.get_lr()[0])
 
     @master_only
-    def _on_epoch_end(self, epoch, epoch_time):
+    def on_epoch_end(self, epoch, epoch_time):
         # epoch time
         self.update_epoch_meter('train_time', epoch_time)
         # print train meters
@@ -259,20 +259,20 @@ class Runner(metaclass=ABCMeta):
 
     @master_only
     def register_epoch_meter(self, name, meter_type, fmt='{:f}', plt=True):
-        self._meter_pool.register(name, meter_type, fmt, plt)
+        self.meter_pool.register(name, meter_type, fmt, plt)
 
     @master_only
     def update_epoch_meter(self, name, value):
-        self._meter_pool.update(name, value)
+        self.meter_pool.update(name, value)
 
     @master_only
     def print_epoch_meters(self, meter_type):
-        self._meter_pool.print_meters(meter_type, self.logger)
+        self.meter_pool.print_meters(meter_type, self.logger)
 
     @master_only
     def plt_epoch_meters(self, epoch):
-        self._meter_pool.plt_meters(epoch, self.tensorboard_writer)
+        self.meter_pool.plt_meters(epoch, self.tensorboard_writer)
 
     @master_only
     def reset_epoch_meters(self):
-        self._meter_pool.reset()
+        self.meter_pool.reset()
