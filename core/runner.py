@@ -156,10 +156,21 @@ class Runner(metaclass=ABCMeta):
 
     @torch.no_grad()
     @master_only
-    def validate(self):
+    def validate(self, cfg: dict = None, in_training_process: bool = False):
+        if not in_training_process:
+            self.init_validation(cfg)
+
         self.model.eval()
+        val_start_time = time.time()
+
+        # val loop
         for iter_index, data in enumerate(self.val_data_loader):
             self.val_iters(iter_index, data)
+
+        val_end_time = time.time()
+        self.update_epoch_meter('val_time', val_end_time - val_start_time)
+        # print val meters
+        self.print_epoch_meters('val')
 
     @abstractmethod
     def val_iters(self, iter_index, data):
@@ -191,13 +202,6 @@ class Runner(metaclass=ABCMeta):
         self.train_data_loader = self.build_train_data_loader(cfg)
         self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
 
-        # val config and val data loader
-        if hasattr(cfg, 'VAL'):
-            if hasattr(cfg.VAL, 'INTERVAL'):
-                self.val_interval = cfg.VAL.INTERVAL
-            self.val_data_loader = self.build_val_data_loader(cfg)
-            self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
-
         # create optim
         self.optim = build_optim(cfg.TRAIN.OPTIM, self.model)
         self.logger.info('set optim: ' + str(self.optim))
@@ -223,6 +227,17 @@ class Runner(metaclass=ABCMeta):
                 purge_step=(self.start_epoch + 1) if self.start_epoch != 0 else None
             )
 
+        # init validation
+        if hasattr(cfg, 'VAL'):
+            self.init_validation(cfg)
+
+    @master_only
+    def init_validation(self, cfg):
+        if hasattr(cfg.VAL, 'INTERVAL'):
+            self.val_interval = cfg.VAL.INTERVAL
+        self.val_data_loader = self.build_val_data_loader(cfg)
+        self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
+
     @master_only
     def on_epoch_start(self, epoch):
         # print epoch num
@@ -239,12 +254,7 @@ class Runner(metaclass=ABCMeta):
         self.print_epoch_meters('train')
         # validate
         if self.val_data_loader is not None and epoch % self.val_interval == 0:
-            val_start_time = time.time()
-            self.validate()
-            val_end_time = time.time()
-            self.update_epoch_meter('val_time', val_end_time - val_start_time)
-            # print val meters
-            self.print_epoch_meters('val')
+            self.validate(in_training_process=True)
         # tensorboard plt meters
         self.plt_epoch_meters(epoch)
         # save model
