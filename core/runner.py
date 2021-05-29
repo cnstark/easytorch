@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 from abc import ABCMeta, abstractmethod
 
 import torch
@@ -16,17 +17,18 @@ from ..utils import get_logger, get_rank, is_master, master_only
 
 class Runner(metaclass=ABCMeta):
     def __init__(self, cfg):
+        # default logger
+        self.logger = get_logger('easytorch')
+
         # param
         self.model_name = cfg.MODEL.NAME
         self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, config_md5(cfg))
+        self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
         self.ckpt_save_strategy = None
         self.num_epochs = None
         self.start_epoch = None
 
         self.val_interval = 1
-
-        # default logger
-        self.logger = get_logger('easytorch')
 
         # create model
         self.model = self.build_model(cfg)
@@ -44,6 +46,18 @@ class Runner(metaclass=ABCMeta):
 
         # declare tensorboard_writer
         self.tensorboard_writer = None
+
+    def init_logger(self, logger: logging.Logger = None, logger_name: str = None,
+                    log_file_name: str = None, log_level: int = logging.INFO):
+        if logger is not None:
+            self.logger = logger
+        elif logger_name is not None:
+            if log_file_name is not None:
+                log_file_name = '{}_{}.log'.format(log_file_name, time.strftime("%Y%m%d%H%M%S", time.localtime()))
+                log_file_path = os.path.join(self.ckpt_save_dir, log_file_name)
+            else:
+                log_file_path = None
+            self.logger = get_logger(logger_name, log_file_path, log_level)
 
     @staticmethod
     @abstractmethod
@@ -187,12 +201,6 @@ class Runner(metaclass=ABCMeta):
         if is_master() and not os.path.isdir(self.ckpt_save_dir):
             os.makedirs(self.ckpt_save_dir)
             save_config(cfg, os.path.join(self.ckpt_save_dir, 'param.txt'))
-
-        # init logger
-        log_file_name = 'training_log_{}.log'.format(time.strftime("%Y%m%d%H%M%S", time.localtime()))
-        self.logger = get_logger('easytorch-training', log_file=os.path.join(self.ckpt_save_dir, log_file_name))
-
-        self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
 
         # init meter_pool
         if is_master():

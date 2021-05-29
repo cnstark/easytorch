@@ -9,6 +9,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from ..utils import get_logger, get_rank
 
 
+DEFAULT_LOGGER = get_logger('easytorch-checkpoint')
+
+
 def get_ckpt_dict(model: nn.Module, optimizer: optim.Optimizer, epoch: int) -> dict:
     """Generate checkpoint dict.
     checkpoint dict format:
@@ -56,7 +59,7 @@ def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = '*.pt') -> str:
     return ckpt_list[-1]
 
 
-def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = get_logger('easytorch')) -> dict:
+def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = DEFAULT_LOGGER) -> dict:
     """Load checkpoint
     if param `ckpt_path` is None, load the last checkpoint in `ckpt_save_dir`,
     else load checkpoint from `ckpt_path`
@@ -76,7 +79,7 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = get_lo
     return torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
 
 
-def save_ckpt(ckpt: dict, ckpt_path: str, logger: Logger = get_logger('easytorch')):
+def save_ckpt(ckpt: dict, ckpt_path: str, logger: Logger = DEFAULT_LOGGER):
     """Save checkpoint
 
     Args:
