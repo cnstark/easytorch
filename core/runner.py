@@ -202,6 +202,10 @@ class Runner(metaclass=ABCMeta):
             os.makedirs(self.ckpt_save_dir)
             save_config(cfg, os.path.join(self.ckpt_save_dir, 'param.txt'))
 
+        # init logger (after making ckpt save dir)
+        log_file_name = 'training_log_{}.log'.format(time.strftime("%Y%m%d%H%M%S", time.localtime()))
+        self.init_logger(logger_name='easytorch-training', log_file_name=log_file_name)
+
         # init meter_pool
         if is_master():
             self.meter_pool = MeterPool()

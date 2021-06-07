@@ -30,10 +30,6 @@ def train(cfg: dict, tf32_mode: bool):
     Runner = cfg['RUNNER']
     runner = Runner(cfg)
 
-    # init logger
-    log_file_name = 'training_log_{}.log'.format(time.strftime("%Y%m%d%H%M%S", time.localtime()))
-    runner.init_logger(logger_name='easytorch-training', log_file_name=log_file_name)
-
     # train
     runner.train(cfg)
 
