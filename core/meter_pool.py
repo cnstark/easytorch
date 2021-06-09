@@ -54,10 +54,10 @@ class MeterPool:
         else:
             logger.info(print_str)
 
-    def plt_meters(self, epoch, tensorboard_writer):
+    def plt_meters(self, meter_type, step, tensorboard_writer):
         for name, value in self._pool.items():
-            if value['plt']:
-                tensorboard_writer.add_scalar(name, value['meter'].avg, global_step=epoch)
+            if value['plt'] and value['type'] == meter_type:
+                tensorboard_writer.add_scalar(name, value['meter'].avg, global_step=step)
         tensorboard_writer.flush()
 
     def reset(self):

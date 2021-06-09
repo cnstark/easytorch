@@ -170,8 +170,8 @@ class Runner(metaclass=ABCMeta):
 
     @torch.no_grad()
     @master_only
-    def validate(self, cfg: dict = None, in_training_process: bool = False):
-        if not in_training_process:
+    def validate(self, cfg: dict = None, train_epoch: int = None):
+        if train_epoch is None:
             self.init_validation(cfg)
 
         self.model.eval()
@@ -185,6 +185,10 @@ class Runner(metaclass=ABCMeta):
         self.update_epoch_meter('val_time', val_end_time - val_start_time)
         # print val meters
         self.print_epoch_meters('val')
+        if train_epoch is not None:
+            val_interval = self.val_interval if self.val_interval is not None else 1
+            # tensorboard plt meters
+            self.plt_epoch_meters('val', train_epoch // val_interval)
 
     @abstractmethod
     def val_iters(self, iter_index, data):
@@ -205,10 +209,6 @@ class Runner(metaclass=ABCMeta):
         # init logger (after making ckpt save dir)
         log_file_name = 'training_log_{}.log'.format(time.strftime("%Y%m%d%H%M%S", time.localtime()))
         self.init_logger(logger_name='easytorch-training', log_file_name=log_file_name)
-
-        # init meter_pool
-        if is_master():
-            self.meter_pool = MeterPool()
 
         # train data loader
         self.train_data_loader = self.build_train_data_loader(cfg)
@@ -264,11 +264,11 @@ class Runner(metaclass=ABCMeta):
         self.update_epoch_meter('train_time', epoch_time)
         # print train meters
         self.print_epoch_meters('train')
+        # tensorboard plt meters
+        self.plt_epoch_meters('train', epoch)
         # validate
         if self.val_data_loader is not None and epoch % self.val_interval == 0:
-            self.validate(in_training_process=True)
-        # tensorboard plt meters
-        self.plt_epoch_meters(epoch)
+            self.validate(train_epoch=epoch)
         # save model
         self.save_model(epoch)
         # reset meters
@@ -281,6 +281,8 @@ class Runner(metaclass=ABCMeta):
 
     @master_only
     def register_epoch_meter(self, name, meter_type, fmt='{:f}', plt=True):
+        if self.meter_pool is None:
+            self.meter_pool = MeterPool()
         self.meter_pool.register(name, meter_type, fmt, plt)
 
     @master_only
@@ -292,8 +294,8 @@ class Runner(metaclass=ABCMeta):
         self.meter_pool.print_meters(meter_type, self.logger)
 
     @master_only
-    def plt_epoch_meters(self, epoch):
-        self.meter_pool.plt_meters(epoch, self.tensorboard_writer)
+    def plt_epoch_meters(self, meter_type, step):
+        self.meter_pool.plt_meters(meter_type, step, self.tensorboard_writer)
 
     @master_only
     def reset_epoch_meters(self):
