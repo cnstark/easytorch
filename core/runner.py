@@ -18,13 +18,13 @@ from ..utils import get_logger, get_rank, is_master, master_only
 
 
 class Runner(metaclass=ABCMeta):
-    def __init__(self, cfg):
+    def __init__(self, cfg: dict):
         # default logger
         self.logger = get_logger('easytorch')
 
         # param
-        self.model_name = cfg.MODEL.NAME
-        self.ckpt_save_dir = os.path.join(cfg.TRAIN.CKPT_SAVE_DIR, config_md5(cfg))
+        self.model_name = cfg['MODEL']['NAME']
+        self.ckpt_save_dir = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
         self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
         self.ckpt_save_strategy = None
         self.num_epochs = None
@@ -131,9 +131,9 @@ class Runner(metaclass=ABCMeta):
 
         dataset = self.build_train_dataset(cfg)
         if torch.distributed.is_initialized():
-            return build_data_loader_ddp(dataset, cfg.TRAIN.DATA)
+            return build_data_loader_ddp(dataset, cfg['TRAIN']['DATA'])
         else:
-            return build_data_loader(dataset, cfg.TRAIN.DATA)
+            return build_data_loader(dataset, cfg['TRAIN']['DATA'])
 
     def build_val_data_loader(self, cfg: dict) -> DataLoader:
         """Build val dataset and dataloader.
@@ -148,7 +148,7 @@ class Runner(metaclass=ABCMeta):
         """
 
         dataset = self.build_val_dataset(cfg)
-        return build_data_loader(dataset, cfg.VAL.DATA)
+        return build_data_loader(dataset, cfg['VAL']['DATA'])
 
     def build_model(self, cfg: dict) -> nn.Module:
         """Build model.
@@ -276,7 +276,7 @@ class Runner(metaclass=ABCMeta):
             [on_epoch_end] ------> Epoch Val: val every n epoch
                                     for in val iters
                                         val iter
-                                    [on_validation_end]
+                                    [on_validating_end]
         [on_training_end]
 
         Args:
@@ -304,12 +304,17 @@ class Runner(metaclass=ABCMeta):
             self.on_epoch_end(epoch, epoch_end_time - epoch_start_time)
         self.on_training_end()
 
-    def init_training(self, cfg):
+    def init_training(self, cfg: dict):
+        """Initialize training
+
+        Args:
+            cfg (dict): config
+        """
+
         # init training param
-        self.num_epochs = cfg.TRAIN.NUM_EPOCHS
+        self.num_epochs = cfg['TRAIN']['NUM_EPOCHS']
         self.start_epoch = 0
-        if hasattr(cfg.TRAIN, 'CKPT_SAVE_STRATEGY'):
-            self.ckpt_save_strategy = cfg.TRAIN.CKPT_SAVE_STRATEGY
+        self.ckpt_save_strategy = cfg['TRAIN'].get('CKPT_SAVE_STRATEGY')
 
         # make ckpt_save_dir
         if is_master() and not os.path.isdir(self.ckpt_save_dir):
@@ -324,18 +329,18 @@ class Runner(metaclass=ABCMeta):
         self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
 
         # create optim
-        self.optim = build_optim(cfg.TRAIN.OPTIM, self.model)
+        self.optim = build_optim(cfg['TRAIN']['OPTIM'], self.model)
         self.logger.info('set optim: ' + str(self.optim))
 
         # create lr_scheduler
-        if hasattr(cfg.TRAIN, 'LR_SCHEDULER'):
-            self.scheduler = build_lr_scheduler(cfg.TRAIN.LR_SCHEDULER, self.optim)
+        if hasattr(cfg['TRAIN'], 'LR_SCHEDULER'):
+            self.scheduler = build_lr_scheduler(cfg['TRAIN']['LR_SCHEDULER'], self.optim)
             self.logger.info('set lr_scheduler: ' + str(self.scheduler))
             self.register_epoch_meter('lr', 'train', '{:.2e}')
 
         # fine tune
-        if hasattr(cfg.TRAIN, 'FINETUNE_FROM'):
-            self.load_model(cfg.TRAIN.FINETUNE_FROM)
+        if hasattr(cfg['TRAIN'], 'FINETUNE_FROM'):
+            self.load_model(cfg['TRAIN']['FINETUNE_FROM'])
             self.logger.info('start fine tuning')
 
         # resume
@@ -353,7 +358,16 @@ class Runner(metaclass=ABCMeta):
             self.init_validation(cfg)
 
     @master_only
-    def on_epoch_start(self, epoch):
+    def on_epoch_start(self, epoch: int):
+        """Callback at the start of an epoch.
+
+        Notes:
+            It is a `master_only` function by default.
+
+        Args:
+            epoch (int): current epoch
+        """
+
         # print epoch num
         self.logger.info('epoch {:d} / {:d}'.format(epoch, self.num_epochs))
         # update lr meter
@@ -361,7 +375,17 @@ class Runner(metaclass=ABCMeta):
             self.update_epoch_meter('lr', self.scheduler.get_lr()[0])
 
     @master_only
-    def on_epoch_end(self, epoch, epoch_time):
+    def on_epoch_end(self, epoch: int, epoch_time: float):
+        """Callback at the end of an epoch.
+
+        Notes:
+            It is a `master_only` function by default.
+
+        Args:
+            epoch (int): current epoch.
+            epoch_time (float): epoch time.
+        """
+
         # epoch time
         self.update_epoch_meter('train_time', epoch_time)
         # print train meters
@@ -377,15 +401,37 @@ class Runner(metaclass=ABCMeta):
         self.reset_epoch_meters()
 
     def on_training_end(self):
+        """Callback at the end of training.
+        """
+
         if is_master():
             # close tensorboard writer
             self.tensorboard_writer.close()
 
     @abstractmethod
-    def train_iters(self, epoch, iter_index, data):
+    def train_iters(self, epoch: int, iter_index: int, data: torch.Tensor or tuple) -> torch.Tensor:
+        """It must be implement to define training detail.
+
+        If it returns `loss`, the function ```self.backward``` will be called.
+
+        Args:
+            epoch (int): current epoch.
+            iter_index (int): current iter.
+            data (torch.Tensor or tuple): Data provided by DataLoader
+
+        Returns:
+            loss (torch.Tensor)
+        """
+
         pass
 
-    def backward(self, loss):
+    def backward(self, loss: torch.Tensor):
+        """Backward and update params.
+
+        Args:
+            loss (torch.Tensor): loss
+        """
+
         self.optim.zero_grad()
         loss.backward()
         self.optim.step()
@@ -393,6 +439,14 @@ class Runner(metaclass=ABCMeta):
     @torch.no_grad()
     @master_only
     def validate(self, cfg: dict = None, train_epoch: int = None):
+        """Validate model.
+
+        Args:
+            cfg (dict, optional): config
+            train_epoch (int, optional): current epoch if in training process.
+        """
+
+        # init validation if not in training process
         if train_epoch is None:
             self.init_validation(cfg)
 
@@ -408,19 +462,30 @@ class Runner(metaclass=ABCMeta):
         # print val meters
         self.print_epoch_meters('val')
         if train_epoch is not None:
-            val_interval = self.val_interval if self.val_interval is not None else 1
             # tensorboard plt meters
-            self.plt_epoch_meters('val', train_epoch // val_interval)
+            self.plt_epoch_meters('val', train_epoch // self.val_interval)
 
     @master_only
-    def init_validation(self, cfg):
-        if hasattr(cfg.VAL, 'INTERVAL'):
-            self.val_interval = cfg.VAL.INTERVAL
+    def init_validation(self, cfg: dict):
+        """Initialize validation
+
+        Args:
+            cfg (dict): config
+        """
+
+        self.val_interval = cfg['VAL'].get('INTERVAL', 1)
         self.val_data_loader = self.build_val_data_loader(cfg)
         self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
 
     @abstractmethod
-    def val_iters(self, iter_index, data):
+    def val_iters(self, iter_index: int, data: torch.Tensor or tuple):
+        """It must be implement to define validating detail.
+
+        Args:
+            iter_index (int): current iter.
+            data (torch.Tensor or tuple): Data provided by DataLoader
+        """
+
         pass
 
     @master_only
