@@ -103,7 +103,7 @@ def get_training_dependent_config(cfg: dict, except_keys: set or list = None) ->
 
     if except_keys is None:
         except_keys = copy.deepcopy(TRAINING_INDEPENDENT_KEYS)
-        if cfg_copy.get(TRAINING_INDEPENDENT_FLAG) is None:
+        if cfg_copy.get(TRAINING_INDEPENDENT_FLAG) is not None:
             except_keys.update(cfg_copy[TRAINING_INDEPENDENT_FLAG])
 
     # convert to set
