@@ -1,31 +1,64 @@
+import logging
+
 import torch
-
-
-METER_TYPES = ['train', 'val']
+from torch.utils.tensorboard import SummaryWriter
 
 
 class AvgMeter(object):
+    """Average meter.
+    """
+
     def __init__(self):
-        self.reset()
+        self._sum = 0.
+        self._count = 0
 
     def reset(self):
-        self.avg = 0.
-        self.sum = 0.
-        self.count = 0
+        """Reset counter.
+        """
 
-    def update(self, val, n=1):
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
+        self._sum = 0.
+        self._count = 0
+
+    def update(self, value: float, n: int = 1):
+        """Update sum and count.
+
+        Args:
+            value (float): value.
+            n (int): number.
+        """
+
+        self._sum += value * n
+        self._count += n
+
+    @property
+    def avg(self) -> float:
+        """Get average value.
+
+        Returns:
+            avg (float)
+        """
+
+        return self._sum / self._count
 
 
 class MeterPool:
+    """Meter container
+    """
+
     def __init__(self):
         self._pool = {}
 
-    def register(self, name, meter_type, fmt='{:f}', plt=True):
-        if meter_type not in METER_TYPES:
-            raise ValueError('Unsupport meter type!')
+    def register(self, name: str, meter_type: str, fmt: str = '{:f}', plt: bool = True):
+        """Init an average meter and add it to meter pool.
+
+        Args:
+            name (str): meter name (must be unique).
+            meter_type (str): meter type.
+            fmt (str): meter output format.
+            plt (bool): set ```True``` to plot it in tensorboard
+                when calling ```plt_meters```.
+        """
+
         self._pool[name] = {
             'meter': AvgMeter(),
             'index': len(self._pool.keys()),
@@ -34,13 +67,36 @@ class MeterPool:
             'plt': plt
         }
 
-    def update(self, name, value):
+    def update(self, name: str, value: float):
+        """Update average meter.
+
+        Args:
+            name (str): meter name.
+            value (str): value.
+        """
+
         self._pool[name]['meter'].update(value)
 
-    def get_avg(self, name):
+    def get_avg(self, name: str) -> float:
+        """Get average value.
+
+        Args:
+            name (str): meter name.
+
+        Returns:
+            avg (float)
+        """
+
         return self._pool[name]['meter'].avg
 
-    def print_meters(self, meter_type, logger=None):
+    def print_meters(self, meter_type: str, logger: logging.Logger = None):
+        """Print the specified type of meters.
+
+        Args:
+            meter_type (str): meter type
+            logger (logging.Logger): logger
+        """
+
         print_list = []
         for i in range(len(self._pool.keys())):
             for name, value in self._pool.items():
@@ -54,13 +110,24 @@ class MeterPool:
         else:
             logger.info(print_str)
 
-    def plt_meters(self, meter_type, step, tensorboard_writer):
+    def plt_meters(self, meter_type: str, step: int, tensorboard_writer: SummaryWriter):
+        """Plot the specified type of meters in tensorboard.
+
+        Args:
+            meter_type (str): meter type.
+            step (int): Global step value to record
+            tensorboard_writer (SummaryWriter): tensorboard SummaryWriter
+        """
+
         for name, value in self._pool.items():
             if value['plt'] and value['type'] == meter_type:
                 tensorboard_writer.add_scalar(name, value['meter'].avg, global_step=step)
         tensorboard_writer.flush()
 
     def reset(self):
+        """Reset all meters.
+        """
+
         for _, value in self._pool.items():
             value['meter'].reset()
 
@@ -76,7 +143,7 @@ class MeterPoolDDP(MeterPool):
                     tensor[i][0] = float(value['meter'].count)
                     tensor[i][1] = value['meter'].avg
         return tensor
-    
+
     def update_tensor(self, tensor):
         if tensor.shape[0] != len(self._pool.keys()):
             raise ValueError('Invalid tensor shape!')
