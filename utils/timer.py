@@ -87,3 +87,17 @@ class Timer:
         start_record_time = self._record_dict[start_record_name]
 
         return end_record_time - start_record_time, end_record_time - self._record_dict['Start']
+
+
+class TimePredictor:
+    def __init__(self, start_step: int, end_step: int):
+        self.start_step = start_step
+        self.end_step = end_step
+        self.start_time = time.time()
+
+    def get_remaining_time(self, step: int) -> float:
+        now_time = time.time()
+        return (now_time - self.start_time) * (self.end_step - self.start_step) / (step - self.start_step)
+
+    def get_expected_end_time(self, step: int) -> float:
+        return self.start_time + self.get_remaining_time(step)
