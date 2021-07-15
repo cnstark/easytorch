@@ -274,6 +274,7 @@ class Runner(metaclass=ABCMeta):
             for in train iters
                 [train_iters]
             [on_epoch_end] ------> Epoch Val: val every n epoch
+                                    [on_validating_start]
                                     for in val iters
                                         val iter
                                     [on_validating_end]
@@ -370,9 +371,6 @@ class Runner(metaclass=ABCMeta):
     def on_epoch_start(self, epoch: int):
         """Callback at the start of an epoch.
 
-        Notes:
-            It is a `master_only` function by default.
-
         Args:
             epoch (int): current epoch
         """
@@ -385,9 +383,6 @@ class Runner(metaclass=ABCMeta):
 
     def on_epoch_end(self, epoch: int):
         """Callback at the end of an epoch.
-
-        Notes:
-            It is a `master_only` function by default.
 
         Args:
             epoch (int): current epoch.
@@ -455,8 +450,10 @@ class Runner(metaclass=ABCMeta):
         if train_epoch is None:
             self.init_validation(cfg)
 
-        self.model.eval()
+        self.on_validating_start()
+
         val_start_time = time.time()
+        self.model.eval()
 
         # val loop
         for iter_index, data in enumerate(self.val_data_loader):
@@ -470,6 +467,8 @@ class Runner(metaclass=ABCMeta):
             # tensorboard plt meters
             self.plt_epoch_meters('val', train_epoch // self.val_interval)
 
+        self.on_validating_end()
+
     @master_only
     def init_validation(self, cfg: dict):
         """Initialize validation
@@ -481,6 +480,20 @@ class Runner(metaclass=ABCMeta):
         self.val_interval = cfg['VAL'].get('INTERVAL', 1)
         self.val_data_loader = self.build_val_data_loader(cfg)
         self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
+
+    @master_only
+    def on_validating_start(self):
+        """Callback at the start of validating.
+        """
+
+        pass
+
+    @master_only
+    def on_validating_end(self):
+        """Callback at the end of validating.
+        """
+
+        pass
 
     @abstractmethod
     def val_iters(self, iter_index: int, data: torch.Tensor or tuple):
