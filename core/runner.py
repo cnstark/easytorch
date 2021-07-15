@@ -14,7 +14,7 @@ from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, c
 from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
 from ..config import config_md5, save_config
-from ..utils import get_logger, get_rank, is_master, master_only
+from ..utils import TimePredictor, get_logger, get_rank, is_master, master_only
 
 
 class Runner(metaclass=ABCMeta):
@@ -285,6 +285,9 @@ class Runner(metaclass=ABCMeta):
 
         self.init_training(cfg)
 
+        # train time predictor
+        train_time_predictor = TimePredictor(self.start_epoch, self.num_epochs)
+
         # training loop
         for epoch_index in range(self.start_epoch, self.num_epochs):
             epoch = epoch_index + 1
@@ -301,7 +304,14 @@ class Runner(metaclass=ABCMeta):
                 self.scheduler.step()
 
             epoch_end_time = time.time()
-            self.on_epoch_end(epoch, epoch_end_time - epoch_start_time)
+            # epoch time
+            self.update_epoch_meter('train_time', epoch_end_time - epoch_start_time)
+            self.on_epoch_end(epoch)
+
+            expected_end_time = train_time_predictor.get_expected_end_time(epoch)
+            self.logger.info('The estimated training finish time is {}'.format(
+                time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expected_end_time))))
+
         self.on_training_end()
 
     def init_training(self, cfg: dict):
@@ -357,7 +367,6 @@ class Runner(metaclass=ABCMeta):
         if hasattr(cfg, 'VAL'):
             self.init_validation(cfg)
 
-    @master_only
     def on_epoch_start(self, epoch: int):
         """Callback at the start of an epoch.
 
@@ -374,8 +383,7 @@ class Runner(metaclass=ABCMeta):
         if self.scheduler is not None:
             self.update_epoch_meter('lr', self.scheduler.get_lr()[0])
 
-    @master_only
-    def on_epoch_end(self, epoch: int, epoch_time: float):
+    def on_epoch_end(self, epoch: int):
         """Callback at the end of an epoch.
 
         Notes:
@@ -383,11 +391,8 @@ class Runner(metaclass=ABCMeta):
 
         Args:
             epoch (int): current epoch.
-            epoch_time (float): epoch time.
         """
 
-        # epoch time
-        self.update_epoch_meter('train_time', epoch_time)
         # print train meters
         self.print_epoch_meters('train')
         # tensorboard plt meters
