@@ -304,7 +304,9 @@ class Runner(metaclass=ABCMeta):
                 self.scheduler.step()
 
             epoch_end_time = time.time()
-            self.on_epoch_end(epoch, epoch_end_time - epoch_start_time)
+            # epoch time
+            self.update_epoch_meter('train_time', epoch_end_time - epoch_start_time)
+            self.on_epoch_end(epoch)
 
             expected_end_time = train_time_predictor.get_expected_end_time(epoch)
             self.logger.info('The estimated training finish time is {}'.format(
@@ -365,7 +367,6 @@ class Runner(metaclass=ABCMeta):
         if hasattr(cfg, 'VAL'):
             self.init_validation(cfg)
 
-    @master_only
     def on_epoch_start(self, epoch: int):
         """Callback at the start of an epoch.
 
@@ -382,8 +383,7 @@ class Runner(metaclass=ABCMeta):
         if self.scheduler is not None:
             self.update_epoch_meter('lr', self.scheduler.get_lr()[0])
 
-    @master_only
-    def on_epoch_end(self, epoch: int, epoch_time: float):
+    def on_epoch_end(self, epoch: int):
         """Callback at the end of an epoch.
 
         Notes:
@@ -391,11 +391,8 @@ class Runner(metaclass=ABCMeta):
 
         Args:
             epoch (int): current epoch.
-            epoch_time (float): epoch time.
         """
 
-        # epoch time
-        self.update_epoch_meter('train_time', epoch_time)
         # print train meters
         self.print_epoch_meters('train')
         # tensorboard plt meters
