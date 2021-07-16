@@ -1,10 +1,12 @@
+from typing import Iterator
+
 from torch import nn, optim
 from torch.optim import lr_scheduler
 
 from ..easyoptim import easy_lr_scheduler
 
 
-def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
+def build_optim(optim_cfg: dict, params: Iterator[nn.Parameter]) -> optim.Optimizer:
     """Build optimizer from `optim_cfg`
     `optim_cfg` is part of config which defines fields about optimizer
 
@@ -31,7 +33,8 @@ def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
 
     Args:
         optim_cfg (dict): optimizer config
-        model (nn.Module): model defined by user
+        params (Iterator[nn.Parameter]): iterable of parameters to optimize or dicts defining
+            parameter groups
 
     Returns:
         optimizer (optim.Optimizer)
@@ -39,7 +42,7 @@ def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
 
     Optim = getattr(optim, optim_cfg['TYPE'])
     optim_param = optim_cfg['PARAM'].copy()
-    optimizer = Optim(model.parameters(), **optim_param)
+    optimizer = Optim(params, **optim_param)
     return optimizer
 
 
@@ -83,6 +86,5 @@ def build_lr_scheduler(lr_scheduler_cfg: dict, optimizer: optim.Optimizer):
     else:
         Scheduler = getattr(easy_lr_scheduler, lr_scheduler_type)
     scheduler_param = lr_scheduler_cfg['PARAM'].copy()
-    scheduler_param['optimizer'] = optimizer
-    scheduler = Scheduler(**scheduler_param)
+    scheduler = Scheduler(optimizer, **scheduler_param)
     return scheduler

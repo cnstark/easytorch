@@ -171,6 +171,17 @@ class Runner(metaclass=ABCMeta):
             model = DDP(model, device_ids=[get_rank()])
         return model
 
+    def build_optimizer(self, cfg: dict):
+        # create optim
+        self.optim = build_optim(cfg['TRAIN']['OPTIM'], self.model.parameters())
+        self.logger.info('set optim: ' + str(self.optim))
+
+        # create lr_scheduler
+        if hasattr(cfg['TRAIN'], 'LR_SCHEDULER'):
+            self.scheduler = build_lr_scheduler(cfg['TRAIN']['LR_SCHEDULER'], self.optim)
+            self.logger.info('set lr_scheduler: ' + str(self.scheduler))
+            self.register_epoch_meter('lr', 'train', '{:.2e}')
+
     def get_ckpt_path(self, epoch: int) -> str:
         """Get checkpoint path.
 
@@ -316,6 +327,8 @@ class Runner(metaclass=ABCMeta):
         self.start_epoch = 0
         self.ckpt_save_strategy = cfg['TRAIN'].get('CKPT_SAVE_STRATEGY')
 
+        self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
+
         # make ckpt_save_dir
         if is_master() and not os.path.isdir(self.ckpt_save_dir):
             os.makedirs(self.ckpt_save_dir)
@@ -326,17 +339,9 @@ class Runner(metaclass=ABCMeta):
 
         # train data loader
         self.train_data_loader = self.build_train_data_loader(cfg)
-        self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
 
         # create optim
-        self.optim = build_optim(cfg['TRAIN']['OPTIM'], self.model)
-        self.logger.info('set optim: ' + str(self.optim))
-
-        # create lr_scheduler
-        if hasattr(cfg['TRAIN'], 'LR_SCHEDULER'):
-            self.scheduler = build_lr_scheduler(cfg['TRAIN']['LR_SCHEDULER'], self.optim)
-            self.logger.info('set lr_scheduler: ' + str(self.scheduler))
-            self.register_epoch_meter('lr', 'train', '{:.2e}')
+        self.build_optimizer(cfg)
 
         # fine tune
         if hasattr(cfg['TRAIN'], 'FINETUNE_FROM'):
