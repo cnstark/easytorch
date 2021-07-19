@@ -18,11 +18,12 @@ from ..utils import TimePredictor, get_logger, get_rank, is_master, master_only
 
 
 class Runner(metaclass=ABCMeta):
-    def __init__(self, cfg: dict):
+    def __init__(self, cfg: dict, use_gpu: bool):
         # default logger
         self.logger = get_logger('easytorch')
 
         # param
+        self.use_gpu = use_gpu
         self.model_name = cfg['MODEL']['NAME']
         self.ckpt_save_dir = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
         self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
@@ -71,6 +72,22 @@ class Runner(metaclass=ABCMeta):
             self.logger = get_logger(logger_name, log_file_path, log_level)
         else:
             raise TypeError('At least one of logger and logger_name is not None')
+
+    def to_running_device(self, src: torch.Tensor or torch.Module) -> torch.Tensor or torch.Module:
+        """Move `src` to the running device. If `self.use_gpu` is ```True```,
+        the running device is GPU, else the running device is CPU.
+
+        Args:
+            src (torch.Tensor or torch.Module): source
+
+        Returns:
+            target (torch.Tensor or torch.Module)
+        """
+
+        if self.use_gpu:
+            return src.cuda()
+        else:
+            return src.cpu()
 
     @staticmethod
     @abstractmethod
@@ -166,7 +183,7 @@ class Runner(metaclass=ABCMeta):
         """
 
         model = self.define_model(cfg)
-        model = model.cuda()
+        model = self.to_running_device(model)
         if torch.distributed.is_initialized():
             model = DDP(model, device_ids=[get_rank()])
         return model
