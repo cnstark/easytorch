@@ -11,7 +11,7 @@ from ..config import import_config
 from ..utils import set_gpus, set_tf32_mode
 
 
-def train(cfg: dict, tf32_mode: bool):
+def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
     """Start training
 
     1. Init runner defined by `cfg`
@@ -20,6 +20,7 @@ def train(cfg: dict, tf32_mode: bool):
 
     Args:
         cfg (dict): Easytorch config.
+        use_gpu (bool):  set to ``True`` to use GPU
         tf32_mode (dict): set to ``True`` to use tf32 on Ampere GPU.
     """
 
@@ -28,7 +29,7 @@ def train(cfg: dict, tf32_mode: bool):
 
     # init runner
     Runner = cfg['RUNNER']
-    runner = Runner(cfg)
+    runner = Runner(cfg, use_gpu)
 
     # train
     runner.train(cfg)
@@ -58,7 +59,7 @@ def train_ddp(rank: int, world_size: int, backend: str or Backend, init_method: 
     )
 
     # start training
-    train(cfg, tf32_mode)
+    train(cfg, True, tf32_mode)
 
 
 def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
@@ -67,9 +68,13 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
     Support distributed data parallel training when the number of available GPUs is greater than one.
     Nccl backend is used by default.
 
-    Note:
+    Notes:
+        If `USE_GPU` in `cfg` is ```True```, easytorch will run in GPU mode, `GPU_NUM` in `cfg` must
+        be greater than 0;
+        If `USE_GPU` in `cfg` is ```False```, easytorch will run in CPU mode, `GPU_NUM` in `cfg` must
+        be 0.
         In order to ensure the consistency of training results, the number of available GPUs
-        must be equal to `GPU_NUM` in `cfg`
+        must be equal to `GPU_NUM` in GPU mode.
 
     Args:
         cfg (dict): Easytorch config.
@@ -80,19 +85,26 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
     if isinstance(cfg, str):
         cfg = import_config(cfg)
 
-    set_gpus(gpus)
+    use_gpu = cfg.get('USE_GPU', True)
+    gpu_num = cfg.get('GPU_NUM', 0)
 
-    world_size = torch.cuda.device_count()
+    if use_gpu:
+        if gpu_num == 0:
+            RuntimeError('Easytorch is running in GPU mode, but cfg.GPU_NUM is 0')
 
-    if cfg.GPU_NUM != world_size:
-        raise RuntimeError('GPU num not match, cfg.GPU_NUM = {:d}, but torch.cuda.device_count() = {:d}'.format(
-            cfg.GPU_NUM, world_size
-        ))
+        set_gpus(gpus)
 
-    if world_size == 0:
-        raise RuntimeError('No available gpus')
-    elif world_size == 1:
-        train(cfg, tf32_mode)
+        world_size = torch.cuda.device_count()
+        if gpu_num != world_size:
+            raise RuntimeError('GPU num not match, cfg.GPU_NUM = {:d}, but torch.cuda.device_count() = {:d}'.format(
+                gpu_num, world_size
+            ))
+    else:
+        if gpu_num != 0:
+            raise RuntimeError('Easytorch is running in CPU mode, but cfg.GPU_NUM is not zero')
+
+    if gpu_num <= 1:
+        train(cfg, use_gpu, tf32_mode)
     else:
         # default backend
         backend = Backend.NCCL
@@ -103,8 +115,8 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
 
         mp.spawn(
             train_ddp,
-            args=(world_size, backend, init_method, cfg, tf32_mode),
-            nprocs=world_size,
+            args=(gpu_num, backend, init_method, cfg, tf32_mode),
+            nprocs=gpu_num,
             join=True
         )
 
