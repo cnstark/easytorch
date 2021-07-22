@@ -24,8 +24,9 @@ def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
         tf32_mode (dict): set to ``True`` to use tf32 on Ampere GPU.
     """
 
-    # set tf32 mode
-    set_tf32_mode(tf32_mode)
+    if use_gpu:
+        # set tf32 mode
+        set_tf32_mode(tf32_mode)
 
     # init runner
     Runner = cfg['RUNNER']
@@ -138,10 +139,12 @@ def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = 
     if isinstance(cfg, str):
         cfg = import_config(cfg)
 
-    set_gpus(gpus)
-    set_tf32_mode(tf32_mode)
+    use_gpu = cfg.get('USE_GPU', True)
+    if use_gpu:
+        set_gpus(gpus)
+        set_tf32_mode(tf32_mode)
 
     Runner = cfg['RUNNER']
-    runner = Runner(cfg)
+    runner = Runner(cfg, use_gpu)
 
     fn(cfg, runner, *args)
