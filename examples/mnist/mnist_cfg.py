@@ -15,7 +15,6 @@ CFG.MODEL.NAME = 'conv_net'
 CFG.TRAIN = EasyDict()
 
 CFG.TRAIN.NUM_EPOCHS = 10
-CFG.TRAIN.REPEAT_NUM = 5
 CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
     'checkpoints',
     '_'.join([CFG.MODEL.NAME, str(CFG.TRAIN.NUM_EPOCHS)])

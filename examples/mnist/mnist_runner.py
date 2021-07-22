@@ -50,8 +50,8 @@ class MNISTRunner(Runner):
 
     def train_iters(self, epoch, iter_index, data):
         _input, _target = data
-        _input = _input.cuda()
-        _target = _target.cuda()
+        _input = self.to_running_device(_input)
+        _target = self.to_running_device(_target)
 
         output = self.model(_input)
         loss = self.loss(output, _target)
@@ -60,8 +60,8 @@ class MNISTRunner(Runner):
 
     def val_iters(self, iter_index, data):
         _input, _target = data
-        _input = _input.cuda()
-        _target = _target.cuda()
+        _input = self.to_running_device(_input)
+        _target = self.to_running_device(_target)
 
         output = self.model(_input)
         loss = self.loss(output, _target)
