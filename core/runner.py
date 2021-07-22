@@ -327,8 +327,16 @@ class Runner(metaclass=ABCMeta):
             self.on_epoch_end(epoch)
 
             expected_end_time = train_time_predictor.get_expected_end_time(epoch)
-            self.logger.info('The estimated training finish time is {}'.format(
-                time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expected_end_time))))
+
+            # estimate training finish time
+            if epoch < self.num_epochs:
+                self.logger.info('The estimated training finish time is {}'.format(
+                    time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expected_end_time))))
+
+        # log training finish time
+        self.logger.info('The training finished at {}'.format(
+            time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+        ))
 
         self.on_training_end()
 
