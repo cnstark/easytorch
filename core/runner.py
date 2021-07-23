@@ -18,7 +18,7 @@ from ..utils import TimePredictor, get_logger, get_rank, is_master, master_only
 
 
 class Runner(metaclass=ABCMeta):
-    def __init__(self, cfg: dict, use_gpu: bool):
+    def __init__(self, cfg: dict, use_gpu: bool = True):
         # default logger
         self.logger = get_logger('easytorch')
 
@@ -247,7 +247,7 @@ class Runner(metaclass=ABCMeta):
         """
 
         try:
-            checkpoint_dict = load_ckpt(self.ckpt_save_dir, logger=self.logger)
+            checkpoint_dict = load_ckpt(self.ckpt_save_dir, use_gpu=self.use_gpu, logger=self.logger)
             if isinstance(self.model, DDP):
                 self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             else:
@@ -273,7 +273,8 @@ class Runner(metaclass=ABCMeta):
         """
 
         try:
-            checkpoint_dict = load_ckpt(self.ckpt_save_dir, ckpt_path=ckpt_path, logger=self.logger)
+            checkpoint_dict = load_ckpt(self.ckpt_save_dir, ckpt_path=ckpt_path, use_gpu=self.use_gpu,
+                                        logger=self.logger)
             if isinstance(self.model, DDP):
                 self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             else:

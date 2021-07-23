@@ -8,7 +8,6 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from ..utils import get_logger, get_rank
 
-
 DEFAULT_LOGGER = get_logger('easytorch-checkpoint')
 
 
@@ -59,7 +58,7 @@ def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = '*.pt') -> str:
     return ckpt_list[-1]
 
 
-def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = DEFAULT_LOGGER) -> dict:
+def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True, logger: Logger = DEFAULT_LOGGER) -> dict:
     """Load checkpoint
     if param `ckpt_path` is None, load the last checkpoint in `ckpt_save_dir`,
     else load checkpoint from `ckpt_path`
@@ -67,6 +66,7 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = DEFAUL
     Args:
         ckpt_save_dir (str): checkpoint save directory
         ckpt_path (str): checkpoint path, default is None
+        use_gpu (bool): set to ``True`` to load checkpoint to GPU
         logger (Logger): logger, default is Logger('easytorch')
 
     Returns:
@@ -75,8 +75,12 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = DEFAUL
 
     if ckpt_path is None:
         ckpt_path = get_last_ckpt_path(ckpt_save_dir)
+    if use_gpu:
+        map_location = 'cuda:{}'.format(get_rank())
+    else:
+        map_location = 'cpu'
     logger.info('load ckpt from \'{}\''.format(ckpt_path))
-    return torch.load(ckpt_path, map_location='cuda:{}'.format(get_rank()))
+    return torch.load(ckpt_path, map_location=map_location)
 
 
 def save_ckpt(ckpt: dict, ckpt_path: str, logger: Logger = DEFAULT_LOGGER):
