@@ -10,7 +10,7 @@ class MNISTRunner(Runner):
     def init_training(self, cfg):
         """Initialize training.
 
-        Including loss, meters, etc.
+        Including loss, training meters, etc.
 
         Args:
             cfg (dict): config
@@ -22,7 +22,18 @@ class MNISTRunner(Runner):
         self.loss = self.to_running_device(self.loss)
 
         self.register_epoch_meter('train_loss', 'train', '{:.2f}')
-        self.register_epoch_meter('val_loss', 'val', '{:.2f}')
+
+    def init_validation(self, cfg: dict):
+        """Initialize validation.
+
+        Including validation meters, etc.
+
+        Args:
+            cfg (dict): config
+        """
+
+        super().init_validation(cfg)
+
         self.register_epoch_meter('val_acc', 'val', '{:.2f}%')
 
     @staticmethod
@@ -118,6 +129,4 @@ class MNISTRunner(Runner):
 
         output = self.model(_input)
         pred = output.data.max(1, keepdim=True)[1]
-        loss = self.loss(output, _target)
-        self.update_epoch_meter('val_loss', loss.item())
         self.update_epoch_meter('val_acc', 100 * pred.eq(_target.data.view_as(pred)).sum())
