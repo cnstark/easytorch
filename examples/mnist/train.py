@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../..')
 from argparse import ArgumentParser
 
 from easytorch import launch_training

@@ -7,14 +7,14 @@ CFG = EasyDict()
 
 CFG.DESC = 'mnist'
 CFG.RUNNER = MNISTRunner
-CFG.USE_GPU = False
+CFG.GPU_NUM = 1
 
 CFG.MODEL = EasyDict()
 CFG.MODEL.NAME = 'conv_net'
 
 CFG.TRAIN = EasyDict()
 
-CFG.TRAIN.NUM_EPOCHS = 10
+CFG.TRAIN.NUM_EPOCHS = 30
 CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
     'checkpoints',
     '_'.join([CFG.MODEL.NAME, str(CFG.TRAIN.NUM_EPOCHS)])

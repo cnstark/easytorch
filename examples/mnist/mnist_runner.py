@@ -19,6 +19,7 @@ class MNISTRunner(Runner):
 
         self.register_epoch_meter('train_loss', 'train', '{:.2f}')
         self.register_epoch_meter('val_loss', 'val', '{:.2f}')
+        self.register_epoch_meter('val_acc', 'val', '{:.2f}%')
 
     @staticmethod
     def define_model(cfg: dict) -> nn.Module:
@@ -64,5 +65,7 @@ class MNISTRunner(Runner):
         _target = self.to_running_device(_target)
 
         output = self.model(_input)
+        pred = output.data.max(1, keepdim=True)[1]
         loss = self.loss(output, _target)
         self.update_epoch_meter('val_loss', loss.item())
+        self.update_epoch_meter('val_acc', 100 * pred.eq(_target.data.view_as(pred)).sum())
