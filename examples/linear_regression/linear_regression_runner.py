@@ -60,5 +60,4 @@ class LinearRegressionRunner(Runner):
 
     def on_training_end(self):
         super().on_training_end()
-        # self.logger.log('Result: k: {}, b: {}'.format(self.model.parameters()))
-
+        self.logger.info('Result: k: {}, b: {}'.format(self.model.weight.item(), self.model.bias.item()))
