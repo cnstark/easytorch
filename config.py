@@ -230,7 +230,7 @@ def import_config(path: str, verbose: bool = True) -> dict:
     """
 
     if path.find('.py') != -1:
-        path = path[:path.find('.py')].replace('/', '.')
+        path = path[:path.find('.py')].replace('/', '.').replace('\\', '.')
     cfg_name = path.split('.')[-1]
     cfg = __import__(path, fromlist=[cfg_name]).CFG
 
