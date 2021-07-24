@@ -49,3 +49,11 @@ pip install -r requirements.txt
 
 * [线性回归](examples/linear_regression)
 * [MNIST手写数字识别](examples/mnist)
+
+## README 徽章
+
+如果你的项目正在使用EasyTorch，可以将EasyTorch徽章 [![EasyTorch](https://img.shields.io/badge/Developing%20with-EasyTorch-2077ff.svg)](https://github.com/cnstark/easytorch) 添加到你的 README 中：
+
+```
+[![EasyTorch](https://img.shields.io/badge/Developing%20with-EasyTorch-2077ff.svg)](https://github.com/cnstark/easytorch)
+```
