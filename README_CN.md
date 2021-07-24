@@ -23,7 +23,7 @@ Easytorch是一个基于PyTorch的开源神经网络训练框架，封装了PyTo
 * [Windows](https://pytorch.org/get-started/locally/#windows-prerequisites)
 * [MacOS](https://pytorch.org/get-started/locally/#mac-prerequisites)
 
-操作系统推荐使用Ubuntu16.04及更高版本或CentOS7及以更高版本。
+推荐使用Ubuntu16.04及更高版本或CentOS7及以更高版本。
 
 ### Python
 
@@ -31,7 +31,7 @@ python >= 3.6 （推荐 >= 3.7）
 
 推荐使用[Anaconda](https://www.anaconda.com/)
 
-### PyTorch及Cuda
+### PyTorch及CUDA
 
 [pytorch](https://pytorch.org/) >= 1.4（推荐 >= 1.7）
 
@@ -45,3 +45,7 @@ python >= 3.6 （推荐 >= 3.7）
 pip install -r requirements.txt
 ```
 
+## 示例
+
+* [线性回归](examples/linear_regression)
+* [MNIST手写数字识别](examples/mnist)
