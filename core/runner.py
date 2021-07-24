@@ -120,9 +120,8 @@ class Runner(metaclass=ABCMeta):
         pass
 
     @staticmethod
-    @abstractmethod
     def build_val_dataset(cfg: dict):
-        """It must be implement to build dataset for validation.
+        """It can be implement to build dataset for validation (not necessary).
 
         Args:
             cfg (dict): config
@@ -131,7 +130,7 @@ class Runner(metaclass=ABCMeta):
             val dataset (Dataset)
         """
 
-        pass
+        raise NotImplementedError()
 
     def build_train_data_loader(self, cfg: dict) -> DataLoader:
         """Build train dataset and dataloader.
@@ -521,16 +520,15 @@ class Runner(metaclass=ABCMeta):
 
         pass
 
-    @abstractmethod
     def val_iters(self, iter_index: int, data: torch.Tensor or tuple):
-        """It must be implement to define validating detail.
+        """It can be implement to define validating detail (not necessary).
 
         Args:
             iter_index (int): current iter.
             data (torch.Tensor or tuple): Data provided by DataLoader
         """
 
-        pass
+        raise NotImplementedError()
 
     @master_only
     def register_epoch_meter(self, name, meter_type, fmt='{:f}', plt=True):
