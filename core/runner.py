@@ -421,7 +421,8 @@ class Runner(metaclass=ABCMeta):
         if self.val_data_loader is not None and epoch % self.val_interval == 0:
             self.validate(train_epoch=epoch)
         # save model
-        self.save_model(epoch)
+        if is_master():
+            self.save_model(epoch)
         # reset meters
         self.reset_epoch_meters()
 
