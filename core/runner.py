@@ -404,7 +404,7 @@ class Runner(metaclass=ABCMeta):
         self.logger.info('epoch {:d} / {:d}'.format(epoch, self.num_epochs))
         # update lr meter
         if self.scheduler is not None:
-            self.update_epoch_meter('lr', self.scheduler.get_lr()[0])
+            self.update_epoch_meter('lr', self.scheduler.get_last_lr()[0])
 
     def on_epoch_end(self, epoch: int):
         """Callback at the end of an epoch.
