@@ -1,4 +1,3 @@
-import time
 import random
 from typing import Callable
 
@@ -91,7 +90,7 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
 
     if use_gpu:
         if gpu_num == 0:
-            RuntimeError('Easytorch is running in GPU mode, but cfg.GPU_NUM is 0')
+            raise RuntimeError('Easytorch is running in GPU mode, but cfg.GPU_NUM is 0')
 
         set_gpus(gpus)
 

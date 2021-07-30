@@ -1,7 +1,6 @@
 import math
 import warnings
 
-from torch.optim.optimizer import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler
 
 
@@ -37,7 +36,6 @@ class MultiCosineAnnealingWarmupLR(_LRScheduler):
     """
 
     def __init__(self, optimizer, final_epoch, T_0, lr_mult, warmup_begin=0, warmup_factor=0.01, eta_min=0, last_epoch=-1, verbose=False):
-        T_0_len = len(T_0)
         if not isinstance(T_0, list):
             raise ValueError("Expected list object T_0, but got {}".format(type(T_0)))
         if not isinstance(lr_mult, list):
