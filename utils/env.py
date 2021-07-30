@@ -1,6 +1,8 @@
 import os
+import random
 
 import torch
+import numpy as np
 
 from .logging import get_logger
 
@@ -39,3 +41,19 @@ def set_tf32_mode(tf32_mode: bool):
     else:
         if tf32_mode:
             raise RuntimeError('Torch version {} does not support tf32'.format(torch.__version__))
+
+
+def setup_random_seed(seed: int):
+    """Setup random seed.
+
+    Including `random`, `numpy`, `torch`
+
+    Args:
+        seed (int): random seed
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
