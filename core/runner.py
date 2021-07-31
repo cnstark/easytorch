@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 
@@ -14,13 +15,19 @@ from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, c
 from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
 from ..config import config_md5, save_config
-from ..utils import TimePredictor, get_logger, get_rank, is_master, master_only
+from ..utils import TimePredictor, get_logger, get_rank, is_master, master_only, setup_random_seed
 
 
 class Runner(metaclass=ABCMeta):
     def __init__(self, cfg: dict, use_gpu: bool = True):
         # default logger
         self.logger = get_logger('easytorch')
+
+        # setup random seed
+        # each rank has different seed in distributed mode
+        self.seed = cfg.get('SEED')
+        if self.seed is not None:
+            setup_random_seed(self.seed + get_rank())
 
         # param
         self.use_gpu = use_gpu
@@ -405,6 +412,12 @@ class Runner(metaclass=ABCMeta):
         # update lr meter
         if self.scheduler is not None:
             self.update_epoch_meter('lr', self.scheduler.get_last_lr()[0])
+
+        # set epoch for sampler in distributed mode
+        # see https://pytorch.org/docs/stable/data.html
+        sampler = self.train_data_loader.sampler
+        if torch.distributed.is_initialized() and isinstance(sampler, DistributedSampler) and sampler.shuffle:
+            sampler.set_epoch(epoch)
 
     def on_epoch_end(self, epoch: int):
         """Callback at the end of an epoch.
