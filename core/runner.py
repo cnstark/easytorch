@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
+from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 
@@ -405,6 +406,12 @@ class Runner(metaclass=ABCMeta):
         # update lr meter
         if self.scheduler is not None:
             self.update_epoch_meter('lr', self.scheduler.get_last_lr()[0])
+
+        # set epoch for sampler in distributed mode
+        # see https://pytorch.org/docs/stable/data.html
+        sampler = self.train_data_loader.sampler
+        if torch.distributed.is_initialized() and isinstance(sampler, DistributedSampler) and sampler.shuffle:
+            sampler.set_epoch(epoch)
 
     def on_epoch_end(self, epoch: int):
         """Callback at the end of an epoch.
