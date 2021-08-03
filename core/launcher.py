@@ -107,9 +107,10 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
         if gpu_num != 0:
             raise RuntimeError('Easytorch is running in CPU mode, but cfg.GPU_NUM is not zero')
 
-    #  save config
-    ckpt_save_dir = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
-    cfg['TRAIN']['CKPT_SAVE_DIR'] = ckpt_save_dir
+    # convert ckpt save dir
+    ckpt_save_dir = cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
+
+    # save config
     if not os.path.isdir(ckpt_save_dir):
         os.makedirs(ckpt_save_dir)
         save_config(cfg, os.path.join(ckpt_save_dir, 'param.txt'))
@@ -155,6 +156,9 @@ def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = 
     if use_gpu:
         set_gpus(gpus)
         set_tf32_mode(tf32_mode)
+
+    # convert ckpt save dir
+    cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
 
     Runner = cfg['RUNNER']
     runner = Runner(cfg, use_gpu)
