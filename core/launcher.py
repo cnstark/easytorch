@@ -32,6 +32,9 @@ def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
     Runner = cfg['RUNNER']
     runner = Runner(cfg, use_gpu)
 
+    # init logger (after making ckpt save dir)
+    runner.init_logger(logger_name='easytorch-training', log_file_name='training_log')
+
     # train
     runner.train(cfg)
 
@@ -160,6 +163,10 @@ def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = 
 
     # convert ckpt save dir
     cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
+
+    # make ckpt save dir
+    if not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']):
+        os.makedirs(cfg['TRAIN']['CKPT_SAVE_DIR'])
 
     Runner = cfg['RUNNER']
     runner = Runner(cfg, use_gpu)

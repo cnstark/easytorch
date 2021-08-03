@@ -358,9 +358,6 @@ class Runner(metaclass=ABCMeta):
         self.start_epoch = 0
         self.ckpt_save_strategy = cfg['TRAIN'].get('CKPT_SAVE_STRATEGY')
 
-        # init logger (after making ckpt save dir)
-        self.init_logger(logger_name='easytorch-training', log_file_name='training_log')
-
         # train data loader
         self.train_data_loader = self.build_train_data_loader(cfg)
         self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
