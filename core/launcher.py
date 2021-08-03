@@ -1,3 +1,4 @@
+import os
 import random
 from typing import Callable
 
@@ -6,7 +7,7 @@ from torch import distributed as dist
 from torch.distributed import Backend
 from torch import multiprocessing as mp
 
-from ..config import import_config
+from ..config import import_config, config_md5, save_config, copy_config_file
 from ..utils import set_gpus, set_tf32_mode
 
 
@@ -83,7 +84,10 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
     """
 
     if isinstance(cfg, str):
+        cfg_path = cfg
         cfg = import_config(cfg)
+    else:
+        cfg_path = None
 
     use_gpu = cfg.get('USE_GPU', True)
     gpu_num = cfg.get('GPU_NUM', 0)
@@ -102,6 +106,15 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
     else:
         if gpu_num != 0:
             raise RuntimeError('Easytorch is running in CPU mode, but cfg.GPU_NUM is not zero')
+
+    #  save config
+    ckpt_save_dir = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
+    cfg['TRAIN']['CKPT_SAVE_DIR'] = ckpt_save_dir
+    if not os.path.isdir(ckpt_save_dir):
+        os.makedirs(ckpt_save_dir)
+        save_config(cfg, os.path.join(ckpt_save_dir, 'param.txt'))
+        if cfg_path is not None:
+            copy_config_file(cfg_path, ckpt_save_dir)
 
     if gpu_num <= 1:
         train(cfg, use_gpu, tf32_mode)

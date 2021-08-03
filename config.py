@@ -72,6 +72,8 @@ Notes:
     except the key is in `TRAINING_INDEPENDENT_KEYS` or `CFG._TRAINING_INDEPENDENT`
 """
 
+import os
+import shutil
 import types
 import copy
 import hashlib
@@ -207,6 +209,19 @@ def save_config(cfg: dict, file_path: str):
         content = 'MD5: {}\n'.format(config_md5(cfg))
         content += config_str(cfg)
         f.write(content)
+
+
+def copy_config_file(cfg_file_path: str, save_dir: str):
+    """Copy config file to `save_dir`
+
+    Args:
+        cfg_file_path (str): config file path
+        save_dir (str): save directory
+    """
+
+    if os.path.isfile(cfg_file_path) and os.path.isdir(save_dir):
+        cfg_file_name = os.path.basename(cfg_file_path)
+        shutil.copyfile(cfg_file_path, os.path.join(save_dir, cfg_file_name))
 
 
 def import_config(path: str, verbose: bool = True) -> dict:
