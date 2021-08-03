@@ -14,7 +14,6 @@ from .meter_pool import MeterPool
 from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
 from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
-from ..config import config_md5, save_config
 from ..utils import TimePredictor, get_logger, get_rank, is_master, master_only, setup_random_seed
 
 
@@ -32,7 +31,7 @@ class Runner(metaclass=ABCMeta):
         # param
         self.use_gpu = use_gpu
         self.model_name = cfg['MODEL']['NAME']
-        self.ckpt_save_dir = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
+        self.ckpt_save_dir = cfg['TRAIN']['CKPT_SAVE_DIR']
         self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
         self.ckpt_save_strategy = None
         self.num_epochs = None
@@ -358,14 +357,6 @@ class Runner(metaclass=ABCMeta):
         self.num_epochs = cfg['TRAIN']['NUM_EPOCHS']
         self.start_epoch = 0
         self.ckpt_save_strategy = cfg['TRAIN'].get('CKPT_SAVE_STRATEGY')
-
-        # make ckpt_save_dir
-        if is_master() and not os.path.isdir(self.ckpt_save_dir):
-            os.makedirs(self.ckpt_save_dir)
-            save_config(cfg, os.path.join(self.ckpt_save_dir, 'param.txt'))
-
-        # init logger (after making ckpt save dir)
-        self.init_logger(logger_name='easytorch-training', log_file_name='training_log')
 
         # train data loader
         self.train_data_loader = self.build_train_data_loader(cfg)

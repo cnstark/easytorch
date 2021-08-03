@@ -1,3 +1,4 @@
+import os
 import random
 from typing import Callable
 
@@ -6,7 +7,7 @@ from torch import distributed as dist
 from torch.distributed import Backend
 from torch import multiprocessing as mp
 
-from ..config import import_config
+from ..config import import_config, config_md5, save_config, copy_config_file
 from ..utils import set_gpus, set_tf32_mode
 
 
@@ -30,6 +31,9 @@ def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
     # init runner
     Runner = cfg['RUNNER']
     runner = Runner(cfg, use_gpu)
+
+    # init logger (after making ckpt save dir)
+    runner.init_logger(logger_name='easytorch-training', log_file_name='training_log')
 
     # train
     runner.train(cfg)
@@ -83,7 +87,10 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
     """
 
     if isinstance(cfg, str):
+        cfg_path = cfg
         cfg = import_config(cfg)
+    else:
+        cfg_path = None
 
     use_gpu = cfg.get('USE_GPU', True)
     gpu_num = cfg.get('GPU_NUM', 0)
@@ -102,6 +109,17 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
     else:
         if gpu_num != 0:
             raise RuntimeError('Easytorch is running in CPU mode, but cfg.GPU_NUM is not zero')
+
+    # convert ckpt save dir
+    cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
+
+    # save config
+    if not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']):
+        os.makedirs(cfg['TRAIN']['CKPT_SAVE_DIR'])
+        if cfg_path is None:
+            save_config(cfg, os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], 'param.txt'))
+        else:
+            copy_config_file(cfg_path, cfg['TRAIN']['CKPT_SAVE_DIR'])
 
     if gpu_num <= 1:
         train(cfg, use_gpu, tf32_mode)
@@ -142,6 +160,13 @@ def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = 
     if use_gpu:
         set_gpus(gpus)
         set_tf32_mode(tf32_mode)
+
+    # convert ckpt save dir
+    cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
+
+    # make ckpt save dir
+    if not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']):
+        os.makedirs(cfg['TRAIN']['CKPT_SAVE_DIR'])
 
     Runner = cfg['RUNNER']
     runner = Runner(cfg, use_gpu)
