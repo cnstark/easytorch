@@ -73,7 +73,7 @@ git commit -m "init by easytorch"
 ### 复制EasyTorch模板至工作目录
 
 ```shell
-cp easytorch/examples/template/* .
+cp -r easytorch/examples/template/* .
 ```
 
 *接下来就可以使用EasyTorch构建你的深度学习项目。*
