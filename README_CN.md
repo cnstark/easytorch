@@ -54,11 +54,29 @@ pip install -r requirements.txt
 
 ## 开始使用
 
-### 初始化git仓库
+### 新建项目文件夹并初始化git仓库
+
+```shell
+mkdir my_deeplearning_project
+cd my_deeplearning_project
+git init
+```
 
 ### 添加easytorch子仓库
 
-### 
+```shell
+git submodule add https://github.com/cnstark/easytorch.git
+git add .
+git commit -m "init by easytorch"
+```
+
+### 复制EasyTorch模板至工作目录
+
+```shell
+cp easytorch/examples/template/* .
+```
+
+*接下来就可以使用EasyTorch构建你的深度学习项目。*
 
 ## README 徽章
 
