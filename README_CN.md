@@ -52,6 +52,14 @@ pip install -r requirements.txt
 * [线性回归](examples/linear_regression)
 * [MNIST手写数字识别](examples/mnist)
 
+## 开始使用
+
+### 初始化git仓库
+
+### 添加easytorch子仓库
+
+### 
+
 ## README 徽章
 
 如果你的项目正在使用EasyTorch，可以将EasyTorch徽章 [![EasyTorch](https://img.shields.io/badge/Developing%20with-EasyTorch-2077ff.svg)](https://github.com/cnstark/easytorch) 添加到你的 README 中：
