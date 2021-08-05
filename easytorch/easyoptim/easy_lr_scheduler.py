@@ -34,35 +34,39 @@ class MultiCosineAnnealingWarmupLR(_LRScheduler):
     .. _SGDR\: Stochastic Gradient Descent with Warm Restarts:
         https://arxiv.org/abs/1608.03983
     """
-
-    def __init__(self, optimizer, final_epoch, T_0, lr_mult, warmup_begin=0, warmup_factor=0.01, eta_min=0, last_epoch=-1, verbose=False):
-        if not isinstance(T_0, list):
-            raise ValueError("Expected list object T_0, but got {}".format(type(T_0)))
-        if not isinstance(lr_mult, list):
-            raise ValueError("Expected list object lr_mult, bug got {}".format(type(lr_mult)))
-        if len(T_0) != len(lr_mult):
-            raise ValueError("Expected T_0 and lr_mult has the same length, but got {} and {}".format(len(T_0), len(lr_mult)))
+    def __init__(self, optimizer, final_epoch, T_0=None, lr_mult=None, warmup_begin=0, warmup_factor=0.01, eta_min=0, last_epoch=-1, verbose=False):
+        if T_0 != None and not isinstance(T_0, list):
+            raise ValueError("Expected list object or None type T_0, but got {}".format(type(T_0)))
+        if lr_mult != None and not isinstance(lr_mult, list):
+            raise ValueError("Expected list object or None type lr_mult, bug got {}".format(type(lr_mult)))
+        if T_0 == None and lr_mult != None:
+            raise ValueError("Expected T_0 and lr_mult has the same length, but got NoneType and {}".format(len(lr_mult)))
+        if T_0 != None and lr_mult == None:
+            raise ValueError("Expected T_0 and lr_mult has the same length, but got {} and NoneType".format(len(T_0)))
+        if T_0 and lr_mult and len(T_0) != len(lr_mult):
+                raise ValueError("Expected T_0 and lr_mult has the same length, but got {} and {}".format(len(T_0), len(lr_mult)))
 
         self.final_epoch = final_epoch
-        self.T_0_list = T_0
-        self.lr_mult_list = lr_mult
+        self.T_0_list = T_0 if T_0 else []
+        self.lr_mult_list = lr_mult if lr_mult else []
         self.warmup_begin = warmup_begin
         self.warmup_factor = warmup_factor
         self.eta_min = eta_min
-
-        if self.warmup_begin > self.T_0_list[0]:
-            raise ValueError("the warmup_begin iteration is bigger than the first T_i, please use smaller warmup_begin or bigger T_0[0]")
 
         # add number at beggining
         self.T_0_list.insert(0, 0)
         self.lr_mult_list.insert(0, 1)
 
         # calculate T_i accroding to given T_0 list
-        T_0_expand = T_0.copy()
-        T_0_expand.append(final_epoch)
+        self.T_0_expand= self.T_0_list.copy()
+        self.T_0_expand.append(final_epoch)
 
-        self.T_i_list = [T_0_expand[i+1] - T_0_expand[i] - 1 for i in range(len(T_0_expand)-1)]
+        if self.warmup_begin > self.T_0_expand[1]:
+            raise ValueError("the warmup_begin iteration is bigger than the first T_i, please use smaller warmup_begin or bigger T_0[0]")
+
+        self.T_i_list = [self.T_0_expand[i+1] - self.T_0_expand[i] - 1 for i in range(len(self.T_0_expand)-1)]
         self.T_i_list[0] = self.T_i_list[0] - self.warmup_begin # subtract warmup at beginning
+
 
         # initial T_i, lr_mult and T_cur
         self.T_i = self.T_i_list[0]
@@ -113,11 +117,11 @@ class MultiCosineAnnealingWarmupLR(_LRScheduler):
             for i in range(1, len(self.T_0_list)):
                 if epoch == 0:
                     return 0
-                elif epoch > self.T_0_list[i-1] and epoch <= self.T_0_list[i]:
+                elif epoch >= self.T_0_list[i-1] and epoch < self.T_0_list[i]:
                     return i-1
                 else:
                     continue
-            return i
+            return len(self.T_0_list) - 1
 
 
         if epoch is None and self.last_epoch < 0:
@@ -128,8 +132,8 @@ class MultiCosineAnnealingWarmupLR(_LRScheduler):
             section = locate(self, epoch) # the section of the T_0_list
             self.T_0 = self.T_0_list[section]
             self.T_i = self.T_i_list[section]
-            self.T_cur = epoch - self.T_0 - 1
-            if epoch <= self.T_0_list[1]:
+            self.T_cur = epoch - self.T_0
+            if epoch < self.T_0_expand[1]:
                 self.T_cur = self.T_cur - self.warmup_begin # subtract warmup_begin at first section
             self.lr_mult = self.lr_mult_list[section]
         else:
@@ -142,7 +146,7 @@ class MultiCosineAnnealingWarmupLR(_LRScheduler):
                 self.T_cur = 0
             else:
                 self.T_cur = epoch - self.T_0 - 1
-            if epoch <= self.T_0_list[1]:
+            if epoch < self.T_0_expand[1]:
                 self.T_cur = self.T_cur - self.warmup_begin
             self.lr_mult = self.lr_mult_list[section]
 
