@@ -35,13 +35,13 @@ class MultiCosineAnnealingWarmupLR(_LRScheduler):
         https://arxiv.org/abs/1608.03983
     """
     def __init__(self, optimizer, final_epoch, T_0=None, lr_mult=None, warmup_begin=0, warmup_factor=0.01, eta_min=0, last_epoch=-1, verbose=False):
-        if T_0 != None and not isinstance(T_0, list):
+        if T_0 and not isinstance(T_0, list):
             raise ValueError("Expected list object or None type T_0, but got {}".format(type(T_0)))
-        if lr_mult != None and not isinstance(lr_mult, list):
+        if lr_mult and not isinstance(lr_mult, list):
             raise ValueError("Expected list object or None type lr_mult, bug got {}".format(type(lr_mult)))
-        if T_0 == None and lr_mult != None:
+        if not T_0 and not lr_mult:
             raise ValueError("Expected T_0 and lr_mult has the same length, but got NoneType and {}".format(len(lr_mult)))
-        if T_0 != None and lr_mult == None:
+        if T_0 and not lr_mult:
             raise ValueError("Expected T_0 and lr_mult has the same length, but got {} and NoneType".format(len(T_0)))
         if T_0 and lr_mult and len(T_0) != len(lr_mult):
                 raise ValueError("Expected T_0 and lr_mult has the same length, but got {} and {}".format(len(T_0), len(lr_mult)))
