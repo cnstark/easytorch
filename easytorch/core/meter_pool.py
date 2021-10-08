@@ -38,7 +38,7 @@ class AvgMeter(object):
             avg (float)
         """
 
-        return self._sum / self._count
+        return self._sum / self._count if self._count != 0 else 0
 
 
 class MeterPool:
