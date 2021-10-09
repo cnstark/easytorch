@@ -14,7 +14,7 @@ from .meter_pool import MeterPool
 from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
 from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
-from ..utils import TimePredictor, get_logger, get_rank, is_master, master_only, setup_random_seed
+from ..utils import TimePredictor, get_logger, get_rank, get_local_rank, is_master, master_only, setup_random_seed
 
 
 class Runner(metaclass=ABCMeta):
@@ -190,7 +190,7 @@ class Runner(metaclass=ABCMeta):
         model = self.define_model(cfg)
         model = self.to_running_device(model)
         if torch.distributed.is_initialized():
-            model = DDP(model, device_ids=[get_rank()])
+            model = DDP(model, device_ids=[get_local_rank()])
         return model
 
     def get_ckpt_path(self, epoch: int) -> str:

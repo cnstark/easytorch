@@ -8,7 +8,7 @@ from torch.distributed import Backend
 from torch import multiprocessing as mp
 
 from ..config import import_config, config_md5, save_config, copy_config_file
-from ..utils import set_gpus, set_tf32_mode
+from ..utils import set_gpus, set_tf32_mode, get_dist_backend
 
 
 def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
@@ -39,20 +39,23 @@ def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
     runner.train(cfg)
 
 
-def train_ddp(rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict, tf32_mode: bool):
+def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict, tf32_mode: bool, node_rank: int = 0):
     """Start training with DistributedDataParallel
 
     Args:
-        rank: Rank of the current process.
+        local_rank: Rank of the current process in the current node.
         world_size: Number of processes participating in the job.
         backend: The backend to use.
         init_method: URL specifying how to initialize the process group.
         cfg (dict): Easytorch config.
         tf32_mode (dict): set to ``True`` to use tf32 on Ampere GPU.
+        node_rank (int): Rank of the current node.
     """
 
     # set cuda device
-    torch.cuda.set_device(rank)
+    torch.cuda.set_device(local_rank)
+
+    rank = cfg['GPU_NUM'] * node_rank + local_rank
 
     # init process
     dist.init_process_group(
@@ -66,7 +69,7 @@ def train_ddp(rank: int, world_size: int, backend: str or Backend, init_method: 
     train(cfg, True, tf32_mode)
 
 
-def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
+def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool, node_rank: int = 0):
     """Launch training process defined by `cfg`.
 
     Support distributed data parallel training when the number of available GPUs is greater than one.
@@ -84,6 +87,7 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
         cfg (dict): Easytorch config.
         gpus (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
         tf32_mode(dict): set to ``True`` to use tf32 on Ampere GPU.
+        node_rank (int): Rank of the current node.
     """
 
     if isinstance(cfg, str):
@@ -101,10 +105,10 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
 
         set_gpus(gpus)
 
-        world_size = torch.cuda.device_count()
-        if gpu_num != world_size:
+        device_count = torch.cuda.device_count()
+        if gpu_num != device_count:
             raise RuntimeError('GPU num not match, cfg.GPU_NUM = {:d}, but torch.cuda.device_count() = {:d}'.format(
-                gpu_num, world_size
+                gpu_num, device_count
             ))
     else:
         if gpu_num != 0:
@@ -124,16 +128,17 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool):
     if gpu_num <= 1:
         train(cfg, use_gpu, tf32_mode)
     else:
-        # default backend
-        backend = Backend.NCCL
+        dist_node_num = cfg.get('DIST_NODE_NUM', 1)
+        if node_rank >= dist_node_num:
+            raise ValueError('The node_rank must be less than dist_node_num!')
 
-        # random port
-        port = random.randint(50000, 65000)
-        init_method = 'tcp://127.0.0.1:{:d}'.format(port)
+        world_size = dist_node_num * gpu_num
+
+        backend, init_method = get_dist_backend(dist_node_num, cfg.get('DIST_BACKEND'), cfg.get('DIST_INIT_METHOD'))
 
         mp.spawn(
             train_ddp,
-            args=(gpu_num, backend, init_method, cfg, tf32_mode),
+            args=(world_size, backend, init_method, cfg, tf32_mode, node_rank),
             nprocs=gpu_num,
             join=True
         )
