@@ -190,7 +190,6 @@ class Runner(metaclass=ABCMeta):
         model = self.define_model(cfg)
         model = self.to_running_device(model)
         if torch.distributed.is_initialized():
-            print(get_local_rank())
             model = DDP(model, device_ids=[get_local_rank()])
         return model
 

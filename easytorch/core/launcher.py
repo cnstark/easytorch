@@ -43,19 +43,19 @@ def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_me
     """Start training with DistributedDataParallel
 
     Args:
-        rank: Rank of the current process.
+        local_rank: Rank of the current process in the current node.
         world_size: Number of processes participating in the job.
         backend: The backend to use.
         init_method: URL specifying how to initialize the process group.
         cfg (dict): Easytorch config.
         tf32_mode (dict): set to ``True`` to use tf32 on Ampere GPU.
+        node_rank (int): Rank of the current node.
     """
 
     # set cuda device
     torch.cuda.set_device(local_rank)
 
     rank = cfg['GPU_NUM'] * node_rank + local_rank
-    print(rank, world_size)
 
     # init process
     dist.init_process_group(
@@ -87,6 +87,7 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool, node_rank: int
         cfg (dict): Easytorch config.
         gpus (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
         tf32_mode(dict): set to ``True`` to use tf32 on Ampere GPU.
+        node_rank (int): Rank of the current node.
     """
 
     if isinstance(cfg, str):
