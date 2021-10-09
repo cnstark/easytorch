@@ -135,7 +135,6 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool, node_rank: int
         world_size = dist_node_num * gpu_num
 
         backend, init_method = get_dist_backend(dist_node_num, cfg.get('DIST_BACKEND'), cfg.get('DIST_INIT_METHOD'))
-        print(init_method)
 
         mp.spawn(
             train_ddp,
