@@ -1,4 +1,6 @@
 import functools
+import random
+from typing import Tuple
 
 import torch
 
@@ -21,6 +23,16 @@ def get_rank() -> int:
         return torch.distributed.get_rank()
     else:
         return 0
+
+
+def get_local_rank() -> int:
+    """Get the local rank of current process group in multiple compute nodes.
+
+    Returns:
+        local_rank (int)
+    """
+
+    return get_rank() % torch.cuda.device_count() if torch.cuda.device_count() != 0 else 0
 
 
 def get_world_size() -> int:
@@ -91,3 +103,26 @@ def master_only(func):
             return func(*args, **kwargs)
 
     return wrapper
+
+
+def get_dist_backend(dist_node_num: int = 1, backend: str = None, init_method: str = None) -> Tuple[str, str]:
+    """Get pytorch dist backend and init method.
+    
+    Note:
+        Default `backend` is 'nccl', default `init_method` is 'tcp://127.0.0.1:{random port}'
+
+    Args:
+        backend (str): The backend to use.
+        init_method (str): URL specifying how to initialize the process group.
+
+    Returns:
+        (backend, init_method)
+    """
+
+    backend = 'nccl' if backend is None else backend
+    if init_method is None:
+        if dist_node_num == 1:
+            init_method = 'tcp://127.0.0.1:{:d}'.format(random.randint(50000, 65000))
+        else:
+            raise ValueError('The init_method cannot be None in multiple compute nodes')
+    return backend, init_method
