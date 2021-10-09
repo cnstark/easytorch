@@ -3,6 +3,7 @@ import time
 import logging
 from abc import ABCMeta, abstractmethod
 
+from tqdm import tqdm
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
@@ -319,7 +320,12 @@ class Runner(metaclass=ABCMeta):
             epoch_start_time = time.time()
             # start training
             self.model.train()
-            for iter_index, data in enumerate(self.train_data_loader):
+
+            # tqdm process bar
+            data_iter = tqdm(self.train_data_loader) if get_local_rank() == 0 else self.train_data_loader
+
+            # data loop
+            for iter_index, data in enumerate(data_iter):
                 loss = self.train_iters(epoch, iter_index, data)
                 if loss is not None:
                     self.backward(loss)
