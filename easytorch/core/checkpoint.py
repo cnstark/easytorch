@@ -6,7 +6,7 @@ import torch
 from torch import nn, optim
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from ..utils import get_logger, get_rank
+from ..utils import get_logger, get_local_rank
 
 DEFAULT_LOGGER = get_logger('easytorch-checkpoint')
 
@@ -76,7 +76,7 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True, l
     if ckpt_path is None:
         ckpt_path = get_last_ckpt_path(ckpt_save_dir)
     if use_gpu:
-        map_location = 'cuda:{}'.format(get_rank())
+        map_location = 'cuda:{}'.format(get_local_rank())
     else:
         map_location = 'cpu'
     logger.info('load ckpt from \'{}\''.format(ckpt_path))
