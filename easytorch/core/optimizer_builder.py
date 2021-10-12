@@ -1,6 +1,7 @@
 from torch import nn, optim
 from torch.optim import lr_scheduler
 
+from .. import easyoptim
 from ..easyoptim import easy_lr_scheduler
 
 
@@ -37,7 +38,11 @@ def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
         optimizer (optim.Optimizer)
     """
 
-    Optim = getattr(optim, optim_cfg['TYPE'])
+    optim_type = optim_cfg['TYPE']
+    if hasattr(optim, optim_type):
+        Optim = getattr(optim, optim_type)
+    else:
+        Optim = getattr(easyoptim, optim_type)
     optim_param = optim_cfg['PARAM'].copy()
     optimizer = Optim(model.parameters(), **optim_param)
     return optimizer
