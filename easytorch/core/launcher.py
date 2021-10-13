@@ -1,5 +1,4 @@
 import os
-import random
 from typing import Callable
 
 import torch
@@ -39,7 +38,8 @@ def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
     runner.train(cfg)
 
 
-def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict, tf32_mode: bool, node_rank: int = 0):
+def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict, tf32_mode: bool,
+              node_rank: int = 0):
     """Start training with DistributedDataParallel
 
     Args:
