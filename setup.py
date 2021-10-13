@@ -45,6 +45,9 @@ if __name__ == '__main__':
             'Programming Language :: Python :: 3.9',
             'Topic :: Utilities'
         ],
+        entry_points={
+            'console_scripts': ['easytrain=easytorch.train:main'],
+        },
         license='Apache License 2.0',
         install_requires=get_requirements(),
         zip_safe=False
