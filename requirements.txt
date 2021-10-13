@@ -1,3 +1,4 @@
+torch>=1.7
 easydict
 tensorboard
 tqdm
