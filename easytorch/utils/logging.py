@@ -23,6 +23,7 @@ def get_logger(name, log_file: str = None, log_level: int = logging.INFO, file_m
     """
 
     logger = logging.getLogger(name)
+    logger.propagate = False
 
     if name in logger_initialized:
         return logger
