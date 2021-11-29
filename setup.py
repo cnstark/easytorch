@@ -24,7 +24,7 @@ def get_requirements(filename='requirements.txt'):
 
 if __name__ == '__main__':
     setup(
-        name='easytorch',
+        name='easy-torch',
         version=get_version(),
         description='Simple and powerful pytorch framework.',
         long_description=readme(),
