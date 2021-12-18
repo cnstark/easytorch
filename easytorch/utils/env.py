@@ -43,26 +43,34 @@ def set_tf32_mode(tf32_mode: bool):
             raise RuntimeError('Torch version {} does not support tf32'.format(torch.__version__))
 
 
-def setup_random_seed(seed: int):
+def setup_random_seed(seed: int, deterministic: bool = True, cudnn_enabled: bool = False,
+                      cudnn_benchmark: bool = False):
     """Setup random seed.
 
     Including `random`, `numpy`, `torch`
 
     Args:
-        seed (int): random seed
+        seed (int): random seed.
+        deterministic (bool): Use deterministic algorithms.
+            See https://pytorch.org/docs/stable/generated/torch.use_deterministic_algorithms.html.
+        cudnn_enabled (bool): Enable cudnn.
+            See https://pytorch.org/docs/stable/backends.html
+        cudnn_benchmark (bool): Enable cudnn benchmark.
+            See https://pytorch.org/docs/stable/backends.html
     """
+
     random.seed(seed)
     np.random.seed(seed)
 
     os.environ['PYTHONHASHSEED'] = str(seed)
-    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
 
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-    torch.use_deterministic_algorithms(True)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.enabled = False
-    torch.backends.cudnn.benchmark = False
-
+    if deterministic:
+        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+        torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.enabled = cudnn_enabled
+    torch.backends.cudnn.benchmark = cudnn_benchmark
