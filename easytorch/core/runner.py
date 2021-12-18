@@ -27,7 +27,12 @@ class Runner(metaclass=ABCMeta):
         # each rank has different seed in distributed mode
         self.seed = cfg.get('SEED')
         if self.seed is not None:
-            setup_random_seed(self.seed + get_rank())
+            setup_random_seed(
+                self.seed + get_rank(),
+                deterministic=cfg.get('DETERMINISTIC', True),
+                cudnn_enabled=cfg.get('CUDNN_ENABLED', False),
+                cudnn_benchmark=cfg.get('CUDNN_BENCHMARK', False)
+            )
 
         # param
         self.use_gpu = use_gpu
