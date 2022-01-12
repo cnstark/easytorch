@@ -11,7 +11,8 @@ def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
 
     structure of `optim_cfg` is
     {
-        'TYPE': (str) optimizer name, such as ``Adam``, ``SGD``,
+        'TYPE': (str or type) optimizer name or type, such as ``Adam``, ``SGD``,
+            or custom optimizer type.
         'PARAM': (dict) optimizer init params except first param `params`
     }
 
@@ -39,22 +40,26 @@ def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
     """
 
     optim_type = optim_cfg['TYPE']
-    if hasattr(optim, optim_type):
-        Optim = getattr(optim, optim_type)
+    if isinstance(optim_type, type):
+        Optim = optim_type
     else:
-        Optim = getattr(easyoptim, optim_type)
+        if hasattr(optim, optim_type):
+            Optim = getattr(optim, optim_type)
+        else:
+            Optim = getattr(easyoptim, optim_type)
     optim_param = optim_cfg['PARAM'].copy()
     optimizer = Optim(model.parameters(), **optim_param)
     return optimizer
 
 
-def build_lr_scheduler(lr_scheduler_cfg: dict, optimizer: optim.Optimizer):
+def build_lr_scheduler(lr_scheduler_cfg: dict, optimizer: optim.Optimizer) -> lr_scheduler._LRScheduler:
     """Build lr_scheduler from `lr_scheduler_cfg`
     `lr_scheduler_cfg` is part of config which defines fields about lr_scheduler
 
     structure of `lr_scheduler_cfg` is
     {
-        'TYPE': (str) lr_scheduler name, such as ``MultiStepLR``, ``CosineAnnealingLR``,
+        'TYPE': (str or type) lr_scheduler name or type, such as ``MultiStepLR``, ``CosineAnnealingLR``,
+            or custom lr_scheduler type
         'PARAM': (dict) lr_scheduler init params except first param `optimizer`
     }
 
@@ -83,10 +88,13 @@ def build_lr_scheduler(lr_scheduler_cfg: dict, optimizer: optim.Optimizer):
     """
 
     lr_scheduler_type = lr_scheduler_cfg['TYPE']
-    if hasattr(lr_scheduler, lr_scheduler_type):
-        Scheduler = getattr(lr_scheduler, lr_scheduler_type)
+    if isinstance(lr_scheduler_type, type):
+        Scheduler = lr_scheduler_type
     else:
-        Scheduler = getattr(easy_lr_scheduler, lr_scheduler_type)
+        if hasattr(lr_scheduler, lr_scheduler_type):
+            Scheduler = getattr(lr_scheduler, lr_scheduler_type)
+        else:
+            Scheduler = getattr(easy_lr_scheduler, lr_scheduler_type)
     scheduler_param = lr_scheduler_cfg['PARAM'].copy()
     scheduler_param['optimizer'] = optimizer
     scheduler = Scheduler(**scheduler_param)
