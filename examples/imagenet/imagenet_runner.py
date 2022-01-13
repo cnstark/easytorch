@@ -55,14 +55,11 @@ class ImagenetRunner(Runner):
 
     @staticmethod
     def build_train_dataset(cfg: dict) -> Dataset:
-        normalize = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        )
+        normalize = transforms.Normalize(**cfg['TRAIN']['DATA']['NORMALIZE'])
         return datasets.ImageFolder(
             cfg['TRAIN']['DATA']['DIR'],
             transforms.Compose([
-                transforms.RandomResizedCrop(224),
+                transforms.RandomResizedCrop(cfg['TRAIN']['DATA']['CROP_SIZE']),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 normalize,
@@ -70,15 +67,12 @@ class ImagenetRunner(Runner):
 
     @staticmethod
     def build_val_dataset(cfg: dict):
-        normalize = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]
-        )
+        normalize = transforms.Normalize(**cfg['VAL']['DATA']['NORMALIZE'])
         return datasets.ImageFolder(
             cfg['VAL']['DATA']['DIR'],
             transforms.Compose([
-                transforms.Resize(256),
-                transforms.CenterCrop(224),
+                transforms.Resize(cfg['VAL']['DATA']['RESIZE']),
+                transforms.CenterCrop(cfg['VAL']['DATA']['CROP_SIZE']),
                 transforms.ToTensor(),
                 normalize,
             ]))
