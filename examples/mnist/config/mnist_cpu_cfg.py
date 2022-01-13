@@ -7,7 +7,7 @@ CFG = EasyDict()
 
 CFG.DESC = 'mnist'
 CFG.RUNNER = MNISTRunner
-CFG.USE_GPU = False
+CFG.GPU_NUM = 0
 
 CFG.MODEL = EasyDict()
 CFG.MODEL.NAME = 'conv_net'

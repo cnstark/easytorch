@@ -19,7 +19,7 @@ from ..utils import TimePredictor, get_logger, get_local_rank, is_master, master
 
 
 class Runner(metaclass=ABCMeta):
-    def __init__(self, cfg: dict, use_gpu: bool = True):
+    def __init__(self, cfg: dict):
         # default logger
         self.logger = get_logger('easytorch')
 
@@ -27,7 +27,7 @@ class Runner(metaclass=ABCMeta):
         set_env(cfg.get('ENV', {}))
 
         # param
-        self.use_gpu = use_gpu
+        self.use_gpu = cfg.get('GPU_NUM', 0) != 0
         self.model_name = cfg['MODEL']['NAME']
         self.ckpt_save_dir = cfg['TRAIN']['CKPT_SAVE_DIR']
         self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
