@@ -10,7 +10,6 @@ def parse_args():
     parser.add_argument('-c', '--cfg', help='training config', required=True)
     parser.add_argument('--node-rank', default=0, type=int, help='node rank for distributed training')
     parser.add_argument('--gpus', help='visible gpus', type=str)
-    parser.add_argument('--tf32', help='enable tf32 on Ampere device', action='store_true')
     return parser.parse_args()
 
 
@@ -23,7 +22,7 @@ def main():
     args = parse_args()
 
     # train
-    launch_training(args.cfg, args.gpus, args.tf32, args.node_rank)
+    launch_training(args.cfg, args.gpus, args.node_rank)
 
 
 if __name__ == '__main__':
