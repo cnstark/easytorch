@@ -74,9 +74,9 @@ def setup_determinacy(seed: int, deterministic: bool = False, cudnn_enabled: boo
 
     if deterministic:
         os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
-        if torch.__version__ <= '1.7.0':
+        if torch.__version__ < '1.7.0':
             pass
-        elif torch.__version__ <= '1.8.0':
+        elif torch.__version__ < '1.8.0':
             torch.set_deterministic(True)
         else:
             torch.use_deterministic_algorithms(True)
