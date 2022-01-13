@@ -29,16 +29,25 @@ CFG.TRAIN.OPTIM.PARAM = {
     'weight_decay': 1e-4
 }
 
+CFG.TRAIN.LR_SCHEDULER = EasyDict()
+CFG.TRAIN.LR_SCHEDULER.TYPE = 'StepLR'
+CFG.TRAIN.LR_SCHEDULER.PARAM = {
+    'step_size': 30,
+    'gamma': 0.1
+}
+
+IMAGENET_PATH = '/path/to/imagenet/jpegs'
+
 CFG.TRAIN.DATA = EasyDict()
 CFG.TRAIN.DATA.BATCH_SIZE = 4
 CFG.TRAIN.DATA.NUM_WORKERS = 4
 CFG.TRAIN.DATA.SHUFFLE = True
 
-CFG.TRAIN.DATA.DIR = '/path/to/imagenet/jpegs'
+CFG.TRAIN.DATA.DIR = os.path.join(IMAGENET_PATH, 'train')
 
 CFG.VAL = EasyDict()
 
 CFG.VAL.INTERVAL = 1
 
 CFG.VAL.DATA = EasyDict()
-CFG.VAL.DATA.DIR = '/path/to/imagenet/jpegs'
+CFG.VAL.DATA.DIR = os.path.join(IMAGENET_PATH, 'val')
