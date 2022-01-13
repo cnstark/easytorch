@@ -49,7 +49,10 @@ def build_cfg():
     CFG.DESC = 'ddp test'
     CFG.RUNNER = DDPTestRunner
     CFG.GPU_NUM = 8
-    CFG.SEED = 6
+
+    CFG.ENV = EasyDict()
+    CFG.ENV.TF32 = False
+    CFG.ENV.SEED = 6
 
     CFG.MODEL = EasyDict()
     CFG.MODEL.NAME = 'conv'
@@ -82,4 +85,4 @@ def build_cfg():
 if __name__ == "__main__":
     cfg = build_cfg()
 
-    launch_training(cfg, gpus='0,1,2,3,4,5,6,7,8', tf32_mode=False)
+    launch_training(cfg, gpus='0,1,2,3,4,5,6,7,8')
