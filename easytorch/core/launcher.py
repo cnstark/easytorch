@@ -7,10 +7,10 @@ from torch.distributed import Backend
 from torch import multiprocessing as mp
 
 from ..config import import_config, config_md5, save_config, copy_config_file
-from ..utils import set_gpus, set_tf32_mode, get_dist_backend
+from ..utils import set_gpus, get_dist_backend
 
 
-def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
+def train(cfg: dict, use_gpu: bool):
     """Start training
 
     1. Init runner defined by `cfg`
@@ -20,12 +20,7 @@ def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
     Args:
         cfg (dict): Easytorch config.
         use_gpu (bool):  set to ``True`` to use GPU
-        tf32_mode (dict): set to ``True`` to use tf32 on Ampere GPU.
     """
-
-    if use_gpu:
-        # set tf32 mode
-        set_tf32_mode(tf32_mode)
 
     # init runner
     Runner = cfg['RUNNER']
@@ -38,7 +33,7 @@ def train(cfg: dict, use_gpu: bool, tf32_mode: bool):
     runner.train(cfg)
 
 
-def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict, tf32_mode: bool,
+def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict,
               node_rank: int = 0):
     """Start training with DistributedDataParallel
 
@@ -48,7 +43,6 @@ def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_me
         backend: The backend to use.
         init_method: URL specifying how to initialize the process group.
         cfg (dict): Easytorch config.
-        tf32_mode (dict): set to ``True`` to use tf32 on Ampere GPU.
         node_rank (int): Rank of the current node.
     """
 
@@ -66,10 +60,10 @@ def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_me
     )
 
     # start training
-    train(cfg, True, tf32_mode)
+    train(cfg, True)
 
 
-def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool, node_rank: int = 0):
+def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
     """Launch training process defined by `cfg`.
 
     Support distributed data parallel training when the number of available GPUs is greater than one.
@@ -86,7 +80,6 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool, node_rank: int
     Args:
         cfg (dict): Easytorch config.
         gpus (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
-        tf32_mode(dict): set to ``True`` to use tf32 on Ampere GPU.
         node_rank (int): Rank of the current node.
     """
 
@@ -126,7 +119,7 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool, node_rank: int
             copy_config_file(cfg_path, cfg['TRAIN']['CKPT_SAVE_DIR'])
 
     if gpu_num <= 1:
-        train(cfg, use_gpu, tf32_mode)
+        train(cfg, use_gpu)
     else:
         dist_node_num = cfg.get('DIST_NODE_NUM', 1)
         if node_rank >= dist_node_num:
@@ -138,13 +131,13 @@ def launch_training(cfg: dict or str, gpus: str, tf32_mode: bool, node_rank: int
 
         mp.spawn(
             train_ddp,
-            args=(world_size, backend, init_method, cfg, tf32_mode, node_rank),
+            args=(world_size, backend, init_method, cfg, node_rank),
             nprocs=gpu_num,
             join=True
         )
 
 
-def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = None, tf32_mode: bool = False):
+def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = None):
     """Launch runner defined by `cfg`, and call `fn`.
 
     Args:
@@ -155,7 +148,6 @@ def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = 
             ``args`` is the passed through tuple of arguments.
         args (tuple): Arguments passed to ``fn``.
         gpus (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
-        tf32_mode(dict): set to ``True`` to use tf32 on Ampere GPU.
     """
 
     if isinstance(cfg, str):
@@ -164,7 +156,6 @@ def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = 
     use_gpu = cfg.get('USE_GPU', True)
     if use_gpu:
         set_gpus(gpus)
-        set_tf32_mode(tf32_mode)
 
     # convert ckpt save dir
     cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))

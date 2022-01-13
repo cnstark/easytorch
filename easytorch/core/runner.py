@@ -15,7 +15,7 @@ from .meter_pool import MeterPool
 from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
 from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
-from ..utils import TimePredictor, get_logger, get_rank, get_local_rank, is_master, master_only, setup_random_seed
+from ..utils import TimePredictor, get_logger, get_local_rank, is_master, master_only, set_env
 
 
 class Runner(metaclass=ABCMeta):
@@ -23,16 +23,8 @@ class Runner(metaclass=ABCMeta):
         # default logger
         self.logger = get_logger('easytorch')
 
-        # setup random seed
-        # each rank has different seed in distributed mode
-        self.seed = cfg.get('SEED')
-        if self.seed is not None:
-            setup_random_seed(
-                self.seed + get_rank(),
-                deterministic=cfg.get('DETERMINISTIC', True),
-                cudnn_enabled=cfg.get('CUDNN_ENABLED', False),
-                cudnn_benchmark=cfg.get('CUDNN_BENCHMARK', False)
-            )
+        # set env
+        set_env(cfg.get('ENV', {}))
 
         # param
         self.use_gpu = use_gpu
