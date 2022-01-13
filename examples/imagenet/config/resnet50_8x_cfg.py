@@ -1,12 +1,12 @@
 import os
 from easydict import EasyDict
 
-from imagenet_runner import ImageNetRunner
+from imagenet_runner import ImagenetRunner
 
 CFG = EasyDict()
 
 CFG.DESC = 'imagenet resnet50'
-CFG.RUNNER = ImageNetRunner
+CFG.RUNNER = ImagenetRunner
 CFG.GPU_NUM = 8
 
 CFG.MODEL = EasyDict()
