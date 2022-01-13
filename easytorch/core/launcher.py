@@ -10,7 +10,7 @@ from ..config import import_config, config_md5, save_config, copy_config_file
 from ..utils import set_gpus, get_dist_backend
 
 
-def train(cfg: dict, use_gpu: bool):
+def train(cfg: dict):
     """Start training
 
     1. Init runner defined by `cfg`
@@ -19,12 +19,11 @@ def train(cfg: dict, use_gpu: bool):
 
     Args:
         cfg (dict): Easytorch config.
-        use_gpu (bool):  set to ``True`` to use GPU
     """
 
     # init runner
     Runner = cfg['RUNNER']
-    runner = Runner(cfg, use_gpu)
+    runner = Runner(cfg)
 
     # init logger (after making ckpt save dir)
     runner.init_logger(logger_name='easytorch-training', log_file_name='training_log')
@@ -60,7 +59,7 @@ def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_me
     )
 
     # start training
-    train(cfg, True)
+    train(cfg)
 
 
 def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
@@ -70,10 +69,8 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
     Nccl backend is used by default.
 
     Notes:
-        If `USE_GPU` in `cfg` is ```True```, easytorch will run in GPU mode, `GPU_NUM` in `cfg` must
-        be greater than 0;
-        If `USE_GPU` in `cfg` is ```False```, easytorch will run in CPU mode, `GPU_NUM` in `cfg` must
-        be 0.
+        If `GPU_NUM` in `cfg` is greater than `0`, easytorch will run in GPU mode;
+        If `GPU_NUM` in `cfg` is `0`, easytorch will run in CPU mode.
         In order to ensure the consistency of training results, the number of available GPUs
         must be equal to `GPU_NUM` in GPU mode.
 
@@ -89,13 +86,9 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
     else:
         cfg_path = None
 
-    use_gpu = cfg.get('USE_GPU', True)
     gpu_num = cfg.get('GPU_NUM', 0)
 
-    if use_gpu:
-        if gpu_num == 0:
-            raise RuntimeError('Easytorch is running in GPU mode, but cfg.GPU_NUM is 0')
-
+    if gpu_num != 0:
         set_gpus(gpus)
 
         device_count = torch.cuda.device_count()
@@ -103,9 +96,6 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
             raise RuntimeError('GPU num not match, cfg.GPU_NUM = {:d}, but torch.cuda.device_count() = {:d}'.format(
                 gpu_num, device_count
             ))
-    else:
-        if gpu_num != 0:
-            raise RuntimeError('Easytorch is running in CPU mode, but cfg.GPU_NUM is not zero')
 
     # convert ckpt save dir
     cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
@@ -119,7 +109,7 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
             copy_config_file(cfg_path, cfg['TRAIN']['CKPT_SAVE_DIR'])
 
     if gpu_num <= 1:
-        train(cfg, use_gpu)
+        train(cfg)
     else:
         dist_node_num = cfg.get('DIST_NODE_NUM', 1)
         if node_rank >= dist_node_num:
@@ -153,8 +143,7 @@ def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = 
     if isinstance(cfg, str):
         cfg = import_config(cfg)
 
-    use_gpu = cfg.get('USE_GPU', True)
-    if use_gpu:
+    if cfg.get('GPU_NUM', 0) != 0:
         set_gpus(gpus)
 
     # convert ckpt save dir
@@ -165,6 +154,6 @@ def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = 
         os.makedirs(cfg['TRAIN']['CKPT_SAVE_DIR'])
 
     Runner = cfg['RUNNER']
-    runner = Runner(cfg, use_gpu)
+    runner = Runner(cfg)
 
     fn(cfg, runner, *args)
