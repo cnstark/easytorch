@@ -67,15 +67,16 @@ class MeterPool:
             'plt': plt
         }
 
-    def update(self, name: str, value: float):
+    def update(self, name: str, value: float, n: int = 1):
         """Update average meter.
 
         Args:
             name (str): meter name.
             value (str): value.
+            n: (int): num.
         """
 
-        self._pool[name]['meter'].update(value)
+        self._pool[name]['meter'].update(value, n)
 
     def get_avg(self, name: str) -> float:
         """Get average value.
