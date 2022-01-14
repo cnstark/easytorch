@@ -545,8 +545,8 @@ class Runner(metaclass=ABCMeta):
         self.meter_pool.register(name, meter_type, fmt, plt)
 
     @master_only
-    def update_epoch_meter(self, name, value):
-        self.meter_pool.update(name, value)
+    def update_epoch_meter(self, name, value, n=1):
+        self.meter_pool.update(name, value, n)
 
     @master_only
     def print_epoch_meters(self, meter_type):
