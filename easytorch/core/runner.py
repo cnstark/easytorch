@@ -43,6 +43,7 @@ class Runner(metaclass=ABCMeta):
         # declare optimizer and lr_scheduler
         self.optim = None
         self.scheduler = None
+        self.clip = cfg['TRAIN'].get('CLIP', None)
 
         # declare data loader
         self.train_data_loader = None
@@ -467,6 +468,8 @@ class Runner(metaclass=ABCMeta):
 
         self.optim.zero_grad()
         loss.backward()
+        if self.clip is not None:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip)
         self.optim.step()
 
     @torch.no_grad()
