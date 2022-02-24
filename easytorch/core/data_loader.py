@@ -30,6 +30,7 @@ def build_data_loader(dataset: Dataset, data_cfg: dict):
         from ..utils.data_prefetcher import DataLoaderX
         return DataLoaderX(
             dataset,
+            collate_fn=data_cfg.get('COLLATE_FN', None),
             batch_size=data_cfg.get('BATCH_SIZE', 1),
             shuffle=data_cfg.get('SHUFFLE', False),
             num_workers=data_cfg.get('NUM_WORKERS', 0),
@@ -38,6 +39,7 @@ def build_data_loader(dataset: Dataset, data_cfg: dict):
     else:
         return DataLoader(
             dataset,
+            collate_fn=data_cfg.get('COLLATE_FN', None),
             batch_size=data_cfg.get('BATCH_SIZE', 1),
             shuffle=data_cfg.get('SHUFFLE', False),
             num_workers=data_cfg.get('NUM_WORKERS', 0),
@@ -77,6 +79,7 @@ def build_data_loader_ddp(dataset: Dataset, data_cfg: dict):
         from ..utils.data_prefetcher import DataLoaderX
         return DataLoaderX(
             dataset,
+            collate_fn=data_cfg.get('COLLATE_FN', None),
             batch_size=data_cfg.get('BATCH_SIZE', 1),
             shuffle=False,
             sampler=ddp_sampler,
@@ -86,6 +89,7 @@ def build_data_loader_ddp(dataset: Dataset, data_cfg: dict):
     else:
         return DataLoader(
             dataset,
+            collate_fn=data_cfg.get('COLLATE_FN', None),
             batch_size=data_cfg.get('BATCH_SIZE', 1),
             shuffle=False,
             sampler=ddp_sampler,
