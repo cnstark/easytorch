@@ -189,7 +189,7 @@ class Runner(metaclass=ABCMeta):
         model = self.define_model(cfg)
         model = self.to_running_device(model)
         if torch.distributed.is_initialized():
-            model = DDP(model, device_ids=[get_local_rank()])
+            model = DDP(model, device_ids=[get_local_rank()], find_unused_parameters=cfg['TRAIN'].get("FIND_UNUSED_PARAMETERS", False))
         return model
 
     def get_ckpt_path(self, epoch: int) -> str:
