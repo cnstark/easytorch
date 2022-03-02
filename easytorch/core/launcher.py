@@ -139,6 +139,19 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
 
 
 def launch_training_by_torch(cfg: dict or str, gpus: str):
+    """Launch training process defined by `cfg` using `torch.distributed.launch`.
+
+    Nccl backend is used by default.
+
+    Notes:
+        `GPU_NUM` in `cfg` must be greater than `0`.
+        In order to ensure the consistency of training results, the number of available GPUs
+        must be equal to `GPU_NUM`.
+
+    Args:
+        cfg (dictorstr): Easytorch config.
+        gpus (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
+    """
     if isinstance(cfg, str):
         cfg_path = cfg
         cfg = import_config(cfg, verbose=False)
