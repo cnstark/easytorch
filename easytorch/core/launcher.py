@@ -6,7 +6,7 @@ from torch import distributed as dist
 from torch.distributed import Backend
 from torch import multiprocessing as mp
 
-from ..config import import_config, config_md5, save_config, copy_config_file
+from ..config import import_config, print_config, config_md5, save_config, copy_config_file
 from ..utils import set_gpus, get_dist_backend
 
 
@@ -32,7 +32,7 @@ def train(cfg: dict):
     runner.train(cfg)
 
 
-def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict,
+def train_ddp_mp_spawn(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict,
               node_rank: int = 0):
     """Start training with DistributedDataParallel
 
@@ -57,6 +57,17 @@ def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_me
         rank=rank,
         world_size=world_size
     )
+
+    # start training
+    train(cfg)
+
+
+def train_ddp(backend: str or Backend, cfg: dict):
+    # set cuda device
+    torch.cuda.set_device(int(os.environ['LOCAL_RANK']))
+
+    # init process
+    dist.init_process_group(backend)
 
     # start training
     train(cfg)
@@ -101,7 +112,7 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
     cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
 
     # save config
-    if not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']):
+    if not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']) and node_rank == 0:
         os.makedirs(cfg['TRAIN']['CKPT_SAVE_DIR'])
         if cfg_path is None:
             save_config(cfg, os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], 'param.txt'))
@@ -120,11 +131,55 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
         backend, init_method = get_dist_backend(dist_node_num, cfg.get('DIST_BACKEND'), cfg.get('DIST_INIT_METHOD'))
 
         mp.spawn(
-            train_ddp,
+            train_ddp_mp_spawn,
             args=(world_size, backend, init_method, cfg, node_rank),
             nprocs=gpu_num,
             join=True
         )
+
+
+def launch_training_by_torch(cfg: dict or str, gpus: str):
+    if isinstance(cfg, str):
+        cfg_path = cfg
+        cfg = import_config(cfg, verbose=False)
+    else:
+        cfg_path = None
+
+    if int(os.environ['LOCAL_RANK']) == 0:
+        print_config(cfg)
+
+    gpu_num = cfg.get('GPU_NUM', 0)
+
+    if gpu_num == 0:
+        raise ValueError('CPU mode is not supported in DDP mode')
+
+    set_gpus(gpus)
+
+    device_count = torch.cuda.device_count()
+    if gpu_num != device_count:
+        raise RuntimeError('GPU num not match, cfg.GPU_NUM = {:d}, but torch.cuda.device_count() = {:d}'.format(
+            gpu_num, device_count
+        ))
+
+    # convert ckpt save dir
+    cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
+
+    # save config
+    if not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']) and int(os.environ['RANK']) == 0:
+        os.makedirs(cfg['TRAIN']['CKPT_SAVE_DIR'])
+        if cfg_path is None:
+            save_config(cfg, os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], 'param.txt'))
+        else:
+            copy_config_file(cfg_path, cfg['TRAIN']['CKPT_SAVE_DIR'])
+
+    dist_node_num = cfg.get('DIST_NODE_NUM', 1)
+    env_node_num = os.environ['GROUP_WORLD_SIZE']
+    if int(env_node_num) != dist_node_num:
+        raise ValueError('The nnodes in env must be equal to dist_node_num!')
+
+    backend = cfg.get('DIST_BACKEND', 'nccl')
+
+    train_ddp(backend, cfg)
 
 
 def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = None):
