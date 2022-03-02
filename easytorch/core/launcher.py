@@ -32,7 +32,7 @@ def train(cfg: dict):
     runner.train(cfg)
 
 
-def train_ddp_mp_spawn(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict,
+def train_by_mp_spawn(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict,
               node_rank: int = 0):
     """Start training with DistributedDataParallel
 
@@ -62,7 +62,7 @@ def train_ddp_mp_spawn(local_rank: int, world_size: int, backend: str or Backend
     train(cfg)
 
 
-def train_ddp(backend: str or Backend, cfg: dict):
+def train_by_dist_launch(backend: str or Backend, cfg: dict):
     # set cuda device
     torch.cuda.set_device(int(os.environ['LOCAL_RANK']))
 
@@ -131,14 +131,14 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
         backend, init_method = get_dist_backend(dist_node_num, cfg.get('DIST_BACKEND'), cfg.get('DIST_INIT_METHOD'))
 
         mp.spawn(
-            train_ddp_mp_spawn,
+            train_by_mp_spawn,
             args=(world_size, backend, init_method, cfg, node_rank),
             nprocs=gpu_num,
             join=True
         )
 
 
-def launch_training_by_torch(cfg: dict or str, gpus: str):
+def launch_training_by_dist_launch(cfg: dict or str, gpus: str):
     """Launch training process defined by `cfg` using `torch.distributed.launch`.
 
     Nccl backend is used by default.
@@ -192,7 +192,7 @@ def launch_training_by_torch(cfg: dict or str, gpus: str):
 
     backend = cfg.get('DIST_BACKEND', 'nccl')
 
-    train_ddp(backend, cfg)
+    train_by_dist_launch(backend, cfg)
 
 
 def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = None):
