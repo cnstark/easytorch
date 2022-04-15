@@ -6,7 +6,7 @@ from torch import distributed as dist
 from torch.distributed import Backend
 from torch import multiprocessing as mp
 
-from ..config import import_config, config_md5, save_config, copy_config_file
+from ..config import import_config, save_config, copy_config_file, convert_config
 from ..utils import set_gpus, get_dist_backend
 
 
@@ -98,7 +98,7 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
             ))
 
     # convert ckpt save dir
-    cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
+    convert_config(cfg)
 
     # save config
     if not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']):
@@ -147,7 +147,7 @@ def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = 
         set_gpus(gpus)
 
     # convert ckpt save dir
-    cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], config_md5(cfg))
+    convert_config(cfg)
 
     # make ckpt save dir
     if not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']):

@@ -77,6 +77,7 @@ import shutil
 import types
 import copy
 import hashlib
+from typing import Dict
 
 TRAINING_INDEPENDENT_FLAG = '_TRAINING_INDEPENDENT'
 
@@ -195,7 +196,6 @@ def print_config(cfg: dict):
         cfg (dict): Config
     """
 
-    print('MD5: {}'.format(config_md5(cfg)))
     print(config_str(cfg))
 
 
@@ -254,3 +254,13 @@ def import_config(path: str, verbose: bool = True) -> dict:
     if verbose:
         print_config(cfg)
     return cfg
+
+
+def convert_config(cfg: Dict):
+    """Add MD5 to cfg and convert `CKPT_SAVE_DIR` in `CFG.TRAIN`.
+
+    Args:
+        cfg (Dict): config
+    """
+    cfg['MD5'] = config_md5(cfg)
+    cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], cfg['MD5'])
