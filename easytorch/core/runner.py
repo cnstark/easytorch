@@ -78,15 +78,15 @@ class Runner(metaclass=ABCMeta):
         else:
             raise TypeError('At least one of logger and logger_name is not None')
 
-    def to_running_device(self, src: Union[torch.Tensor, torch.Module]) -> Union[torch.Tensor, torch.Module]:
+    def to_running_device(self, src: Union[torch.Tensor, nn.Module]) -> Union[torch.Tensor, nn.Module]:
         """Move `src` to the running device. If `self.use_gpu` is ```True```,
         the running device is GPU, else the running device is CPU.
 
         Args:
-            src (Union[torch.Tensor, torch.Module]): source
+            src (Union[torch.Tensor, nn.Module]): source
 
         Returns:
-            target (Union[torch.Tensor, torch.Module])
+            target (Union[torch.Tensor, nn.Module])
         """
 
         if self.use_gpu:
