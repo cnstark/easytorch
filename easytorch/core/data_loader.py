@@ -1,10 +1,12 @@
+from typing import Dict
+
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 from ..utils import get_rank, get_world_size
 
 
-def build_data_loader(dataset: Dataset, data_cfg: dict):
+def build_data_loader(dataset: Dataset, data_cfg: Dict):
     """Build dataloader from `data_cfg`
     `data_cfg` is part of config which defines fields about data, such as `CFG.TRAIN.DATA`
 
@@ -20,7 +22,7 @@ def build_data_loader(dataset: Dataset, data_cfg: dict):
 
     Args:
         dataset (Dataset): dataset defined by user
-        data_cfg (dict): data config
+        data_cfg (Dict): data config
 
     Returns:
         data loader
@@ -47,7 +49,7 @@ def build_data_loader(dataset: Dataset, data_cfg: dict):
         )
 
 
-def build_data_loader_ddp(dataset: Dataset, data_cfg: dict):
+def build_data_loader_ddp(dataset: Dataset, data_cfg: Dict):
     """Build ddp dataloader from `data_cfg`
     `data_cfg` is part of config which defines fields about data, such as `CFG.TRAIN.DATA`
 
@@ -63,7 +65,7 @@ def build_data_loader_ddp(dataset: Dataset, data_cfg: dict):
 
     Args:
         dataset (Dataset): dataset defined by user
-        data_cfg (dict): data config
+        data_cfg (Dict): data config
 
     Returns:
         data loader

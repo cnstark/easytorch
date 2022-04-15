@@ -2,6 +2,7 @@ import os
 import time
 import logging
 from abc import ABCMeta, abstractmethod
+from typing import Dict, Tuple, Union
 
 from tqdm import tqdm
 import torch
@@ -19,7 +20,7 @@ from ..utils import TimePredictor, get_logger, get_local_rank, is_master, master
 
 
 class Runner(metaclass=ABCMeta):
-    def __init__(self, cfg: dict):
+    def __init__(self, cfg: Dict):
         # default logger
         self.logger = get_logger('easytorch')
 
@@ -77,15 +78,15 @@ class Runner(metaclass=ABCMeta):
         else:
             raise TypeError('At least one of logger and logger_name is not None')
 
-    def to_running_device(self, src: torch.Tensor or torch.Module) -> torch.Tensor or torch.Module:
+    def to_running_device(self, src: Union[torch.Tensor, torch.Module]) -> Union[torch.Tensor, torch.Module]:
         """Move `src` to the running device. If `self.use_gpu` is ```True```,
         the running device is GPU, else the running device is CPU.
 
         Args:
-            src (torch.Tensor or torch.Module): source
+            src (Union[torch.Tensor, torch.Module]): source
 
         Returns:
-            target (torch.Tensor or torch.Module)
+            target (Union[torch.Tensor, torch.Module])
         """
 
         if self.use_gpu:
@@ -95,13 +96,13 @@ class Runner(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def define_model(cfg: dict) -> nn.Module:
+    def define_model(cfg: Dict) -> nn.Module:
         """It must be implement to define the model for training or inference.
 
         Users can select different models by param in cfg.
         
         Args:
-            cfg (dict): config
+            cfg (Dict): config
 
         Returns:
             model (nn.Module)
@@ -111,11 +112,11 @@ class Runner(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def build_train_dataset(cfg: dict) -> Dataset:
+    def build_train_dataset(cfg: Dict) -> Dataset:
         """It must be implement to build dataset for training.
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
 
         Returns:
             train dataset (Dataset)
@@ -124,11 +125,11 @@ class Runner(metaclass=ABCMeta):
         pass
 
     @staticmethod
-    def build_val_dataset(cfg: dict):
+    def build_val_dataset(cfg: Dict):
         """It can be implement to build dataset for validation (not necessary).
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
 
         Returns:
             val dataset (Dataset)
@@ -136,14 +137,14 @@ class Runner(metaclass=ABCMeta):
 
         raise NotImplementedError()
 
-    def build_train_data_loader(self, cfg: dict) -> DataLoader:
+    def build_train_data_loader(self, cfg: Dict) -> DataLoader:
         """Build train dataset and dataloader.
         Build dataset by calling ```self.build_train_dataset```,
         build dataloader by calling ```build_data_loader``` or
         ```build_data_loader_ddp``` when DDP is initialized
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
 
         Returns:
             train data loader (DataLoader)
@@ -155,13 +156,13 @@ class Runner(metaclass=ABCMeta):
         else:
             return build_data_loader(dataset, cfg['TRAIN']['DATA'])
 
-    def build_val_data_loader(self, cfg: dict) -> DataLoader:
+    def build_val_data_loader(self, cfg: Dict) -> DataLoader:
         """Build val dataset and dataloader.
         Build dataset by calling ```self.build_train_dataset```,
         build dataloader by calling ```build_data_loader```.
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
 
         Returns:
             val data loader (DataLoader)
@@ -170,7 +171,7 @@ class Runner(metaclass=ABCMeta):
         dataset = self.build_val_dataset(cfg)
         return build_data_loader(dataset, cfg['VAL']['DATA'])
 
-    def build_model(self, cfg: dict) -> nn.Module:
+    def build_model(self, cfg: Dict) -> nn.Module:
         """Build model.
 
         Initialize model by calling ```self.define_model```,
@@ -179,7 +180,7 @@ class Runner(metaclass=ABCMeta):
         If DDP is initialized, initialize the DDP wrapper.
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
 
         Returns:
             model (nn.Module)
@@ -289,7 +290,7 @@ class Runner(metaclass=ABCMeta):
         except (IndexError, OSError):
             raise OSError('Ckpt file does not exist')
 
-    def train(self, cfg: dict):
+    def train(self, cfg: Dict):
         """Train model.
 
         Train process:
@@ -306,7 +307,7 @@ class Runner(metaclass=ABCMeta):
         [on_training_end]
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
         """
 
         self.init_training(cfg)
@@ -353,11 +354,11 @@ class Runner(metaclass=ABCMeta):
 
         self.on_training_end()
 
-    def init_training(self, cfg: dict):
+    def init_training(self, cfg: Dict):
         """Initialize training
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
         """
 
         # init training param
@@ -446,7 +447,7 @@ class Runner(metaclass=ABCMeta):
             self.tensorboard_writer.close()
 
     @abstractmethod
-    def train_iters(self, epoch: int, iter_index: int, data: torch.Tensor or tuple) -> torch.Tensor:
+    def train_iters(self, epoch: int, iter_index: int, data: Union[torch.Tensor, Tuple]) -> torch.Tensor:
         """It must be implement to define training detail.
 
         If it returns `loss`, the function ```self.backward``` will be called.
@@ -475,11 +476,11 @@ class Runner(metaclass=ABCMeta):
 
     @torch.no_grad()
     @master_only
-    def validate(self, cfg: dict = None, train_epoch: int = None):
+    def validate(self, cfg: Dict = None, train_epoch: int = None):
         """Validate model.
 
         Args:
-            cfg (dict, optional): config
+            cfg (Dict, optional): config
             train_epoch (int, optional): current epoch if in training process.
         """
 
@@ -507,11 +508,11 @@ class Runner(metaclass=ABCMeta):
         self.on_validating_end()
 
     @master_only
-    def init_validation(self, cfg: dict):
+    def init_validation(self, cfg: Dict):
         """Initialize validation
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
         """
 
         self.val_interval = cfg['VAL'].get('INTERVAL', 1)
@@ -532,12 +533,12 @@ class Runner(metaclass=ABCMeta):
 
         pass
 
-    def val_iters(self, iter_index: int, data: torch.Tensor or tuple):
+    def val_iters(self, iter_index: int, data: Union[torch.Tensor, Tuple]):
         """It can be implement to define validating detail (not necessary).
 
         Args:
             iter_index (int): current iter.
-            data (torch.Tensor or tuple): Data provided by DataLoader
+            data (Union[torch.Tensor, Tuple]): Data provided by DataLoader
         """
 
         raise NotImplementedError()

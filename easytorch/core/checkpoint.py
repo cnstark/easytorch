@@ -1,6 +1,7 @@
 import os
 import glob
 from logging import Logger
+from typing import Dict, List, Tuple, Union
 
 import torch
 from torch import nn, optim
@@ -11,7 +12,7 @@ from ..utils import get_logger, get_local_rank
 DEFAULT_LOGGER = get_logger('easytorch-checkpoint')
 
 
-def get_ckpt_dict(model: nn.Module, optimizer: optim.Optimizer, epoch: int) -> dict:
+def get_ckpt_dict(model: nn.Module, optimizer: optim.Optimizer, epoch: int) -> Dict:
     """Generate checkpoint dict.
     checkpoint dict format:
     {
@@ -27,7 +28,7 @@ def get_ckpt_dict(model: nn.Module, optimizer: optim.Optimizer, epoch: int) -> d
         epoch: current epoch
 
     Returns:
-        checkpoint dict (dict): generated checkpoint dict
+        checkpoint dict (Dict): generated checkpoint dict
     """
 
     if isinstance(model, DDP):
@@ -58,7 +59,8 @@ def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = '*.pt') -> str:
     return ckpt_list[-1]
 
 
-def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True, logger: Logger = DEFAULT_LOGGER) -> dict:
+def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True,
+              logger: Logger = DEFAULT_LOGGER) -> Dict:
     """Load checkpoint
     if param `ckpt_path` is None, load the last checkpoint in `ckpt_save_dir`,
     else load checkpoint from `ckpt_path`
@@ -83,11 +85,11 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True, l
     return torch.load(ckpt_path, map_location=map_location)
 
 
-def save_ckpt(ckpt: dict, ckpt_path: str, logger: Logger = DEFAULT_LOGGER):
+def save_ckpt(ckpt: Dict, ckpt_path: str, logger: Logger = DEFAULT_LOGGER):
     """Save checkpoint
 
     Args:
-        ckpt (dict): saved checkpoint dict
+        ckpt (Dict): saved checkpoint dict
         ckpt_path (str): checkpoint save path
         logger (Logger): logger, default is Logger('easytorch')
     """
@@ -96,7 +98,7 @@ def save_ckpt(ckpt: dict, ckpt_path: str, logger: Logger = DEFAULT_LOGGER):
     logger.info('ckpt {} saved'.format(ckpt_path))
 
 
-def need_to_remove_last_ckpt(last_epoch: int, ckpt_save_strategy: int or list or tuple) -> bool:
+def need_to_remove_last_ckpt(last_epoch: int, ckpt_save_strategy: Union[int, List, Tuple]) -> bool:
     """Judging whether to remove last checkpoint by `ckpt_save_strategy`
 
     `ckpt_save_strategy` should be None, an int value, a list or a tuple
@@ -108,7 +110,7 @@ def need_to_remove_last_ckpt(last_epoch: int, ckpt_save_strategy: int or list or
 
     Args:
         last_epoch (int): last epoch num
-        ckpt_save_strategy (int or list or tuple): checkpoint save strategy
+        ckpt_save_strategy (Union[int, List, Tuple]): checkpoint save strategy
 
     Returns:
         last checkpoint delete flag (bool): `True` means delete last checkpoint
@@ -124,14 +126,14 @@ def need_to_remove_last_ckpt(last_epoch: int, ckpt_save_strategy: int or list or
         return False
 
 
-def backup_last_ckpt(last_ckpt_path: str, epoch: int, ckpt_save_strategy: int or list or tuple):
+def backup_last_ckpt(last_ckpt_path: str, epoch: int, ckpt_save_strategy: Union[int, List, Tuple]):
     """Backup last checkpoint when last checkpoint needs to be removed (by call need_to_remove_last_ckpt())
     if last checkpoint file name is `a.pt`, rename `a.pt` to `a.pt.bak`
 
     Args:
         last_ckpt_path (str): last checkpoint file path
         epoch (int): current epoch num
-        ckpt_save_strategy (int or list or tuple): checkpoint save strategy
+        ckpt_save_strategy (Union[int, List, Tuple]): checkpoint save strategy
     """
 
     last_epoch = epoch - 1

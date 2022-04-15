@@ -77,7 +77,7 @@ import shutil
 import types
 import copy
 import hashlib
-from typing import Dict
+from typing import Dict, Set, List, Union
 
 TRAINING_INDEPENDENT_FLAG = '_TRAINING_INDEPENDENT'
 
@@ -92,17 +92,17 @@ TRAINING_INDEPENDENT_KEYS = {
 }
 
 
-def get_training_dependent_config(cfg: dict, except_keys: set or list = None) -> dict:
+def get_training_dependent_config(cfg: Dict, except_keys: Union[Set, List] = None) -> Dict:
     """Get training dependent config.
     Recursively traversal each key,
     if the key is in `TRAINING_INDEPENDENT_KEYS` or `CFG._TRAINING_INDEPENDENT`, pop it.
 
     Args:
-        cfg (dict): Config
-        except_keys (set or list): the keys need to be excepted
+        cfg (Dict): Config
+        except_keys (Union[Set, List]): the keys need to be excepted
 
     Returns:
-        cfg (dict): Training dependent configs
+        cfg (Dict): Training dependent configs
     """
     cfg_copy = copy.deepcopy(cfg)
 
@@ -145,11 +145,11 @@ def get_training_dependent_config(cfg: dict, except_keys: set or list = None) ->
     return cfg_copy
 
 
-def config_str(cfg: dict, indent: str = '') -> str:
+def config_str(cfg: Dict, indent: str = '') -> str:
     """Get config string
 
     Args:
-        cfg (dict): Config
+        cfg (Dict): Config
         indent (str): if ``cfg`` is a sub config, ``indent`` += '    '
 
     Returns:
@@ -170,14 +170,14 @@ def config_str(cfg: dict, indent: str = '') -> str:
     return s
 
 
-def config_md5(cfg: dict) -> str:
+def config_md5(cfg: Dict) -> str:
     """Get MD5 value of config.
 
     Notes:
         Only training dependent configurations participate in the MD5 calculation.
 
     Args:
-        cfg (dict): Config
+        cfg (Dict): Config
 
     Returns:
         MD5 (str)
@@ -189,21 +189,11 @@ def config_md5(cfg: dict) -> str:
     return m.hexdigest()
 
 
-def print_config(cfg: dict):
-    """Print config
-
-    Args:
-        cfg (dict): Config
-    """
-
-    print(config_str(cfg))
-
-
-def save_config(cfg: dict, file_path: str):
+def save_config(cfg: Dict, file_path: str):
     """Save config
 
     Args:
-        cfg (dict): Config
+        cfg (Dict): Config
         file_path (str): file path
     """
 
@@ -226,7 +216,7 @@ def copy_config_file(cfg_file_path: str, save_dir: str):
         shutil.copyfile(cfg_file_path, os.path.join(save_dir, cfg_file_name))
 
 
-def import_config(path: str, verbose: bool = True) -> dict:
+def import_config(path: str, verbose: bool = True) -> Dict:
     """Import config by path
 
     Examples:
@@ -243,7 +233,7 @@ def import_config(path: str, verbose: bool = True) -> dict:
         verbose (str): set to ``True`` to print config
 
     Returns:
-        cfg (dict): `CFG` in config file
+        cfg (Dict): `CFG` in config file
     """
 
     if path.find('.py') != -1:
@@ -252,7 +242,7 @@ def import_config(path: str, verbose: bool = True) -> dict:
     cfg = __import__(path, fromlist=[cfg_name]).CFG
 
     if verbose:
-        print_config(cfg)
+        print(config_str(cfg))
     return cfg
 
 

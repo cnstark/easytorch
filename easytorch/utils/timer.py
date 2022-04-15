@@ -1,4 +1,5 @@
 import time
+from typing import Union
 
 
 class Timer:
@@ -52,7 +53,7 @@ class Timer:
             last_time_record = time_record
             print('{}:: [diff: {:2f}, total: {:2f}]'.format(name, time_diff, time_total))
 
-    def get(self, end: str or int, start: str or int = None):
+    def get(self, end: Union[str, int], start: Union[str, int] = None):
         """Get the time from the ```start``` to the```end```(diff),
         and the time from timer initialization to the ```end```(total).
 
@@ -60,8 +61,8 @@ class Timer:
             If start is none, default is the previous one of the ```end```.
 
         Args:
-            end (str or int): end checkpoint name or index
-            start (str or int): start checkpoint name or index
+            end (Union[str, int]): end checkpoint name or index
+            start (Union[str, int]): start checkpoint name or index
 
         Returns:
             (diff, total)

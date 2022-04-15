@@ -5,7 +5,7 @@ from .dist import is_master
 logger_initialized = set([])
 
 
-def get_logger(name, log_file: str = None, log_level: int = logging.INFO, file_mode: str = 'w') -> logging.Logger:
+def get_logger(name: str, log_file: str = None, log_level: int = logging.INFO, file_mode: str = 'w') -> logging.Logger:
     """Return a logger with the specified name, creating it if necessary.
 
     Notes:

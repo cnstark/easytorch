@@ -1,5 +1,6 @@
 import os
 import random
+from typing import Dict
 
 import torch
 import numpy as np
@@ -92,7 +93,7 @@ def setup_determinacy(seed: int, deterministic: bool = False, cudnn_enabled: boo
         logger.info('Set cudnn deterministic.')
 
 
-def set_env(env_cfg: dict):
+def set_env(env_cfg: Dict):
     """Setup runtime env, include tf32, seed and determinacy.
 
     env config template:
@@ -108,7 +109,7 @@ def set_env(env_cfg: dict):
     ```
 
     Args:
-        env_cfg (dict): env config.
+        env_cfg (Dict): env config.
     """
 
     # tf32

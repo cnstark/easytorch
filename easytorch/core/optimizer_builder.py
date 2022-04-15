@@ -1,3 +1,5 @@
+from typing import Dict
+
 from torch import nn, optim
 from torch.optim import lr_scheduler
 
@@ -5,7 +7,7 @@ from .. import easyoptim
 from ..easyoptim import easy_lr_scheduler
 
 
-def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
+def build_optim(optim_cfg: Dict, model: nn.Module) -> optim.Optimizer:
     """Build optimizer from `optim_cfg`
     `optim_cfg` is part of config which defines fields about optimizer
 
@@ -13,7 +15,7 @@ def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
     {
         'TYPE': (str or type) optimizer name or type, such as ``Adam``, ``SGD``,
             or custom optimizer type.
-        'PARAM': (dict) optimizer init params except first param `params`
+        'PARAM': (Dict) optimizer init params except first param `params`
     }
 
     Note:
@@ -32,7 +34,7 @@ def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
         An `Adam` optimizer will be built.
 
     Args:
-        optim_cfg (dict): optimizer config
+        optim_cfg (Dict): optimizer config
         model (nn.Module): model defined by user
 
     Returns:
@@ -52,7 +54,7 @@ def build_optim(optim_cfg: dict, model: nn.Module) -> optim.Optimizer:
     return optimizer
 
 
-def build_lr_scheduler(lr_scheduler_cfg: dict, optimizer: optim.Optimizer) -> lr_scheduler._LRScheduler:
+def build_lr_scheduler(lr_scheduler_cfg: Dict, optimizer: optim.Optimizer) -> lr_scheduler._LRScheduler:
     """Build lr_scheduler from `lr_scheduler_cfg`
     `lr_scheduler_cfg` is part of config which defines fields about lr_scheduler
 
@@ -60,7 +62,7 @@ def build_lr_scheduler(lr_scheduler_cfg: dict, optimizer: optim.Optimizer) -> lr
     {
         'TYPE': (str or type) lr_scheduler name or type, such as ``MultiStepLR``, ``CosineAnnealingLR``,
             or custom lr_scheduler type
-        'PARAM': (dict) lr_scheduler init params except first param `optimizer`
+        'PARAM': (Dict) lr_scheduler init params except first param `optimizer`
     }
 
     Note:
@@ -80,7 +82,7 @@ def build_lr_scheduler(lr_scheduler_cfg: dict, optimizer: optim.Optimizer) -> lr
         An `MultiStepLR` lr_scheduler will be built.
 
     Args:
-        lr_scheduler_cfg (dict): lr_scheduler config
+        lr_scheduler_cfg (Dict): lr_scheduler config
         optimizer (nn.Module): optimizer
 
     Returns:

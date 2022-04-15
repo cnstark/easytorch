@@ -1,5 +1,5 @@
 import os
-from typing import Callable
+from typing import Callable, Dict, Union
 
 import torch
 from torch import distributed as dist
@@ -10,7 +10,7 @@ from ..config import import_config, save_config, copy_config_file, convert_confi
 from ..utils import set_gpus, get_dist_backend
 
 
-def train(cfg: dict):
+def train(cfg: Dict):
     """Start training
 
     1. Init runner defined by `cfg`
@@ -18,7 +18,7 @@ def train(cfg: dict):
     3. Call `train()` method in the runner
 
     Args:
-        cfg (dict): Easytorch config.
+        cfg (Dict): Easytorch config.
     """
 
     # init runner
@@ -32,8 +32,8 @@ def train(cfg: dict):
     runner.train(cfg)
 
 
-def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_method: str, cfg: dict,
-              node_rank: int = 0):
+def train_ddp(local_rank: int, world_size: int, backend: Union[str, Backend], init_method: str,
+              cfg: Dict, node_rank: int = 0):
     """Start training with DistributedDataParallel
 
     Args:
@@ -41,7 +41,7 @@ def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_me
         world_size: Number of processes participating in the job.
         backend: The backend to use.
         init_method: URL specifying how to initialize the process group.
-        cfg (dict): Easytorch config.
+        cfg (Dict): Easytorch config.
         node_rank (int): Rank of the current node.
     """
 
@@ -62,7 +62,7 @@ def train_ddp(local_rank: int, world_size: int, backend: str or Backend, init_me
     train(cfg)
 
 
-def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
+def launch_training(cfg: Union[Dict, str], gpus: str, node_rank: int = 0):
     """Launch training process defined by `cfg`.
 
     Support distributed data parallel training when the number of available GPUs is greater than one.
@@ -75,7 +75,7 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
         must be equal to `GPU_NUM` in GPU mode.
 
     Args:
-        cfg (dict): Easytorch config.
+        cfg (Union[Dict, str]): Easytorch config.
         gpus (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
         node_rank (int): Rank of the current node.
     """
@@ -127,11 +127,11 @@ def launch_training(cfg: dict or str, gpus: str, node_rank: int = 0):
         )
 
 
-def launch_runner(cfg: dict or str, fn: Callable, args: tuple = (), gpus: str = None):
+def launch_runner(cfg: Union[Dict, str], fn: Callable, args: tuple = (), gpus: str = None):
     """Launch runner defined by `cfg`, and call `fn`.
 
     Args:
-        cfg (dict): Easytorch config.
+        cfg (Union[Dict, str]): Easytorch config.
         fn (Callable): Function is called after init runner.
             The function is called as ``fn(cfg, runner, *args)``, where ``cfg`` is
             the Easytorch config and ``runner`` is the runner defined by ``cfg`` and
