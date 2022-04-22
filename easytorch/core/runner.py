@@ -562,7 +562,7 @@ class Runner(metaclass=ABCMeta):
         Args:
             epoch (int): current epoch.
             metric_name (str): metric name used to measure the model, must be registered in `epoch_meter`.
-            greater_best (bool, optional): `True` means greater value is bset, such as `acc`
+            greater_best (bool, optional): `True` means greater value is best, such as `acc`
                 `False` means lower value is best, such as `loss`. Defaults to True.
         """
 
