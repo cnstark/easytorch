@@ -2,7 +2,7 @@ import os
 import time
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple, Union, Optional
 
 from tqdm import tqdm
 import torch
@@ -365,6 +365,7 @@ class Runner(metaclass=ABCMeta):
         self.num_epochs = cfg['TRAIN']['NUM_EPOCHS']
         self.start_epoch = 0
         self.ckpt_save_strategy = cfg['TRAIN'].get('CKPT_SAVE_STRATEGY')
+        self.best_metrics = {}
 
         # train data loader
         self.train_data_loader = self.build_train_data_loader(cfg)
@@ -476,7 +477,7 @@ class Runner(metaclass=ABCMeta):
 
     @torch.no_grad()
     @master_only
-    def validate(self, cfg: Dict = None, train_epoch: int = None):
+    def validate(self, cfg: Dict = None, train_epoch: Optional[int] = None):
         """Validate model.
 
         Args:
@@ -488,7 +489,7 @@ class Runner(metaclass=ABCMeta):
         if train_epoch is None:
             self.init_validation(cfg)
 
-        self.on_validating_start()
+        self.on_validating_start(train_epoch)
 
         val_start_time = time.time()
         self.model.eval()
@@ -505,7 +506,7 @@ class Runner(metaclass=ABCMeta):
             # tensorboard plt meters
             self.plt_epoch_meters('val', train_epoch // self.val_interval)
 
-        self.on_validating_end()
+        self.on_validating_end(train_epoch)
 
     @master_only
     def init_validation(self, cfg: Dict):
@@ -520,15 +521,21 @@ class Runner(metaclass=ABCMeta):
         self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
 
     @master_only
-    def on_validating_start(self):
+    def on_validating_start(self, train_epoch: Optional[int]):
         """Callback at the start of validating.
+
+        Args:
+            train_epoch (Optional[int]): current epoch if in training process.
         """
 
         pass
 
     @master_only
-    def on_validating_end(self):
+    def on_validating_end(self, train_epoch: Optional[int]):
         """Callback at the end of validating.
+
+        Args:
+            train_epoch (Optional[int]): current epoch if in training process.
         """
 
         pass
@@ -542,6 +549,33 @@ class Runner(metaclass=ABCMeta):
         """
 
         raise NotImplementedError()
+
+    @master_only
+    def save_best_model(self, epoch: int, metric_name: str, greater_best: bool = True):
+        """Save the best model while training.
+
+        Examples:
+            >>> def on_validating_end(self, train_epoch: Optional[int]):
+            >>>     if train_epoch is not None:
+            >>>         self.save_best_model(train_epoch, 'val/loss', greater_best=False)
+
+        Args:
+            epoch (int): current epoch.
+            metric_name (str): metric name used to measure the model, must be registered in `epoch_meter`.
+            greater_best (bool, optional): `True` means greater value is best, such as `acc`
+                `False` means lower value is best, such as `loss`. Defaults to True.
+        """
+
+        metric = self.meter_pool.get_avg(metric_name)
+        best_metric = self.best_metrics.get(metric_name)
+        if best_metric is None or (metric > best_metric if greater_best else metric < best_metric):
+            self.best_metrics[metric_name] = metric
+            ckpt_dict = get_ckpt_dict(self.model, self.optim, epoch)
+            ckpt_path = os.path.join(
+                self.ckpt_save_dir,
+                '{}_best_{}.pt'.format(self.model_name, metric_name.replace('/', '_'))
+            )
+            save_ckpt(ckpt_dict, ckpt_path, self.logger)
 
     @master_only
     def register_epoch_meter(self, name, meter_type, fmt='{:f}', plt=True):
