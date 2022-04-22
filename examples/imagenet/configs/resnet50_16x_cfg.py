@@ -5,12 +5,15 @@ from imagenet_runner import ImagenetRunner
 
 CFG = EasyDict()
 
-CFG.DESC = 'imagenet mobilenet_v3_large'
+CFG.DESC = 'imagenet resnet50'
 CFG.RUNNER = ImagenetRunner
 CFG.GPU_NUM = 8
+CFG.DIST_NODE_NUM = 2
+CFG.DIST_BACKEND = 'nccl'
+CFG.DIST_INIT_METHOD='tcp://{ip_of_node_0}:{free_port}'
 
 CFG.MODEL = EasyDict()
-CFG.MODEL.NAME = 'mobilenet_v3_large'
+CFG.MODEL.NAME = 'resnet50'
 
 CFG.TRAIN = EasyDict()
 
@@ -24,7 +27,7 @@ CFG.TRAIN.CKPT_SAVE_STRATEGY = None
 CFG.TRAIN.OPTIM = EasyDict()
 CFG.TRAIN.OPTIM.TYPE = 'SGD'
 CFG.TRAIN.OPTIM.PARAM = {
-    'lr': 0.01,
+    'lr': 0.1,
     'momentum': 0.9,
     'weight_decay': 1e-4
 }
@@ -36,10 +39,10 @@ CFG.TRAIN.LR_SCHEDULER.PARAM = {
     'gamma': 0.1
 }
 
-IMAGENET_PATH = '/path/to/imagenet/jpegs'
+IMAGENET_PATH = 'datasets/imagenet/jpegs'
 
 CFG.TRAIN.DATA = EasyDict()
-CFG.TRAIN.DATA.BATCH_SIZE = 4
+CFG.TRAIN.DATA.BATCH_SIZE = 16
 CFG.TRAIN.DATA.NUM_WORKERS = 4
 CFG.TRAIN.DATA.SHUFFLE = True
 
@@ -55,6 +58,7 @@ CFG.VAL = EasyDict()
 CFG.VAL.INTERVAL = 1
 
 CFG.VAL.DATA = EasyDict()
+CFG.VAL.DATA.BATCH_SIZE = 16
 CFG.VAL.DATA.DIR = os.path.join(IMAGENET_PATH, 'val')
 CFG.VAL.DATA.CROP_SIZE = 224
 CFG.VAL.DATA.RESIZE = 256

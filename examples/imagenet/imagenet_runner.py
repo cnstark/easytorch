@@ -1,4 +1,4 @@
-import os
+from typing import Dict, Union, Tuple, Optional
 
 import torch
 from torch import nn
@@ -6,7 +6,6 @@ from torch.utils.data import Dataset
 from torchvision import models, datasets, transforms
 
 from easytorch import Runner
-from easytorch.core.checkpoint import get_ckpt_dict, save_ckpt
 
 
 def accuracy(output, target, topk=(1,)):
@@ -27,22 +26,20 @@ def accuracy(output, target, topk=(1,)):
 
 
 class ImagenetRunner(Runner):
-    def __init__(self, cfg: dict):
+    def __init__(self, cfg: Dict):
         super().__init__(cfg)
 
         self.criterion = nn.CrossEntropyLoss()
         self.criterion = self.to_running_device(self.criterion)
 
-        self.best_acc1 = 0.
-
-    def init_training(self, cfg: dict):
+    def init_training(self, cfg: Dict):
         super().init_training(cfg)
 
         self.register_epoch_meter('train/loss', 'train', '{:.4e}')
         self.register_epoch_meter('train/acc@1', 'train', '{:6.2f}')
         self.register_epoch_meter('train/acc@5', 'train', '{:6.2f}')
 
-    def init_validation(self, cfg: dict):
+    def init_validation(self, cfg: Dict):
         super().init_validation(cfg)
 
         self.register_epoch_meter('val/loss', 'val', '{:.4e}')
@@ -50,11 +47,11 @@ class ImagenetRunner(Runner):
         self.register_epoch_meter('val/acc@5', 'val', '{:6.2f}')
 
     @staticmethod
-    def define_model(cfg: dict) -> nn.Module:
+    def define_model(cfg: Dict) -> nn.Module:
         return models.__dict__[cfg['MODEL']['NAME']]()
 
     @staticmethod
-    def build_train_dataset(cfg: dict) -> Dataset:
+    def build_train_dataset(cfg: Dict) -> Dataset:
         normalize = transforms.Normalize(**cfg['TRAIN']['DATA']['NORMALIZE'])
         return datasets.ImageFolder(
             cfg['TRAIN']['DATA']['DIR'],
@@ -66,7 +63,7 @@ class ImagenetRunner(Runner):
             ]))
 
     @staticmethod
-    def build_val_dataset(cfg: dict):
+    def build_val_dataset(cfg: Dict):
         normalize = transforms.Normalize(**cfg['VAL']['DATA']['NORMALIZE'])
         return datasets.ImageFolder(
             cfg['VAL']['DATA']['DIR'],
@@ -77,7 +74,7 @@ class ImagenetRunner(Runner):
                 normalize,
             ]))
 
-    def train_iters(self, epoch: int, iter_index: int, data: torch.Tensor or tuple) -> torch.Tensor:
+    def train_iters(self, epoch: int, iter_index: int, data: Union[torch.Tensor, Tuple]) -> torch.Tensor:
         images, target = data
 
         images = self.to_running_device(images)
@@ -96,7 +93,7 @@ class ImagenetRunner(Runner):
 
         return loss
 
-    def val_iters(self, iter_index: int, data: torch.Tensor or tuple):
+    def val_iters(self, iter_index: int, data: Union[torch.Tensor, Tuple]):
         images, target = data
 
         images = self.to_running_device(images)
@@ -113,10 +110,6 @@ class ImagenetRunner(Runner):
         self.update_epoch_meter('val/acc@1', acc1[0], images.size(0))
         self.update_epoch_meter('val/acc@5', acc5[0], images.size(0))
 
-    def save_best_model(self, epoch: int, acc1: float):
-        if acc1 > self.best_acc1:
-            self.best_acc1 = acc1
-
-            ckpt_dict = get_ckpt_dict(self.model, self.optim, epoch)
-            ckpt_path = os.path.join(self.ckpt_save_dir, '{}_best.pt'.format(self.model_name))
-            save_ckpt(ckpt_dict, ckpt_path, self.logger)
+    def on_validating_end(self, train_epoch: Optional[int]):
+        super().on_validating_end(train_epoch)
+        self.save_best_model(train_epoch, 'val/acc@1', greater_best=True)
