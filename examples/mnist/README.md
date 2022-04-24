@@ -5,13 +5,13 @@
 * CPU
 
 ```shell
-python train.py -c config\mnist_cpu_cfg.py
+easytrain -c configs/mnist_cpu_cfg.py
 ```
 
 * GPU (1x)
 
 ```shell
-python train.py -c config\mnist_1x_cfg.py --gpus 0
+easytrain -c configs/mnist_1x_cfg.py --gpus 0
 ```
 
 ## Validate
@@ -19,11 +19,11 @@ python train.py -c config\mnist_1x_cfg.py --gpus 0
 * CPU
 
 ```shell
-python validate.py -c config\mnist_cpu_cfg.py
+python validate.py -c configs/mnist_cpu_cfg.py
 ```
 
 * GPU (1x)
 
 ```shell
-python validate.py -c config\mnist_1x_cfg.py --gpus 0
+python validate.py -c configs/mnist_1x_cfg.py --gpus 0
 ```
