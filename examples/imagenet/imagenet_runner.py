@@ -111,5 +111,6 @@ class ImagenetRunner(Runner):
         self.update_epoch_meter('val/acc@5', acc5[0], images.size(0))
 
     def on_validating_end(self, train_epoch: Optional[int]):
-        super().on_validating_end(train_epoch)
-        self.save_best_model(train_epoch, 'val/acc@1', greater_best=True)
+        # `None` means validation mode 
+        if train_epoch is not None:
+            self.save_best_model(train_epoch, 'val/acc@1', greater_best=True)
