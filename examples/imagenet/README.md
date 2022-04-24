@@ -47,7 +47,11 @@ To train other models or modify hyperparameters, customize config yourself.
 ### Resnet50
 
 ```shell
+# last
 python validate.py -c configs/resnet50_8x_cfg.py --gpus 0
+
+# best
+python validate.py -c configs/resnet50_8x_cfg.py --gpus 0 --ckpt /path/to/ckpt_dir/resnet50_best_val_acc@1.pt
 ```
 
 ### MobileNet V3 Large
