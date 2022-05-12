@@ -1,3 +1,5 @@
+from typing import Dict
+
 import torch
 from torch import nn
 from torch.utils.data import Dataset
@@ -8,10 +10,10 @@ from ..models import MODEL_DICT
 
 
 class RunnerTemplate(Runner):
-    def __init__(self, cfg: dict):
+    def __init__(self, cfg: Dict):
         super().__init__(cfg)
 
-    def init_training(self, cfg: dict):
+    def init_training(self, cfg: Dict):
         super().init_training(cfg)
 
         # init loss
@@ -22,22 +24,22 @@ class RunnerTemplate(Runner):
         # register meters by calling:
         # self.register_epoch_meter('train_loss', 'train', '{:.2f}')
 
-    def init_validation(self, cfg: dict):
+    def init_validation(self, cfg: Dict):
         super().init_validation(cfg)
 
         # self.register_epoch_meter('val_acc', 'val', '{:.2f}%')
 
     @staticmethod
-    def define_model(cfg: dict) -> nn.Module:
+    def define_model(cfg: Dict) -> nn.Module:
         return MODEL_DICT[cfg['MODEL']['NAME']](**cfg['MODEL'].get('PARAM', {}))
 
     @staticmethod
-    def build_train_dataset(cfg: dict) -> Dataset:
+    def build_train_dataset(cfg: Dict) -> Dataset:
         # return your train Dataset
         pass
 
     @staticmethod
-    def build_val_dataset(cfg: dict):
+    def build_val_dataset(cfg: Dict):
         # return your val Dataset
         pass
 
