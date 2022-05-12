@@ -57,7 +57,7 @@ def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = r'^.+_[\d]*.pt$')
 
     ckpt_list = [f for f in os.listdir(ckpt_save_dir) if re.search(name_pattern, f) is not None]
     ckpt_list.sort()
-    return os.path.koin(ckpt_save_dir, ckpt_list[-1])
+    return os.path.join(ckpt_save_dir, ckpt_list[-1])
 
 
 def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True,
