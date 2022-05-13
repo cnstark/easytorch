@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 from logging import Logger
 from typing import Dict, List, Tuple, Union
@@ -42,21 +43,21 @@ def get_ckpt_dict(model: nn.Module, optimizer: optim.Optimizer, epoch: int) -> D
     }
 
 
-def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = '*.pt') -> str:
+def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = r'^.+_[\d]*.pt$') -> str:
     """Get last checkpoint path in `ckpt_save_dir`
     checkpoint files will be sorted by name
 
     Args:
         ckpt_save_dir (str): checkpoint save directory
-        name_pattern (str): name pattern for checkpoint file, default is '*.pt'
+        name_pattern (str): re pattern for checkpoint file name, default is r'^.+_[\d]*.pt$'
 
     Returns:
         checkpoint path (str): last checkpoint path in `ckpt_save_dir`
     """
 
-    ckpt_list = glob.glob(os.path.join(ckpt_save_dir, name_pattern))
+    ckpt_list = [f for f in os.listdir(ckpt_save_dir) if re.search(name_pattern, f) is not None]
     ckpt_list.sort()
-    return ckpt_list[-1]
+    return os.path.join(ckpt_save_dir, ckpt_list[-1])
 
 
 def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True,
