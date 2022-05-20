@@ -198,9 +198,7 @@ def save_config(cfg: Dict, file_path: str):
     """
 
     with open(file_path, 'w') as f:
-        content = 'MD5: {}\n'.format(config_md5(cfg))
-        content += config_str(cfg)
-        f.write(content)
+        f.write(config_str(cfg))
 
 
 def copy_config_file(cfg_file_path: str, save_dir: str):
