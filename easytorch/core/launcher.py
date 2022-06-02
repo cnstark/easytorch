@@ -101,7 +101,8 @@ def launch_training(cfg: Union[Dict, str], gpus: str, node_rank: int = 0):
     convert_config(cfg)
 
     # save config
-    if not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']):
+    # execute only on node 0
+    if node_rank == 0 and not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']):
         os.makedirs(cfg['TRAIN']['CKPT_SAVE_DIR'])
         save_config(cfg, os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], 'cfg.txt'))
         if cfg_path is not None:
