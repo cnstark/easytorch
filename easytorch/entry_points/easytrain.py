@@ -2,7 +2,7 @@ import os
 import sys
 from argparse import ArgumentParser
 
-from easytorch import launch_training
+from ..launcher import launch_training
 
 
 def parse_args():
@@ -13,7 +13,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+def easytrain():
     # work dir
     path = os.getcwd()
     sys.path.append(path)
@@ -23,7 +23,3 @@ def main():
 
     # train
     launch_training(args.cfg, args.gpus, args.node_rank)
-
-
-if __name__ == '__main__':
-    main()
