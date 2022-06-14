@@ -36,7 +36,6 @@ if __name__ == '__main__':
         include_package_data=True,
         packages=find_packages(exclude=('tests',)),
         classifiers=[
-            'Development Status :: 4 - Beta',
             'License :: OSI Approved :: Apache Software License',
             'Operating System :: OS Independent',
             'Programming Language :: Python :: 3',
@@ -46,7 +45,7 @@ if __name__ == '__main__':
             'Topic :: Utilities'
         ],
         entry_points={
-            'console_scripts': ['easytrain=easytorch.train:main'],
+            'console_scripts': ['easytrain=easytorch.entry_points:easytrain'],
         },
         license='Apache License 2.0',
         install_requires=get_requirements(),
