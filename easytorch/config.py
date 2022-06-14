@@ -79,6 +79,11 @@ import copy
 import hashlib
 from typing import Dict, Set, List, Union
 
+__all__ = [
+    'config_str', 'config_md5', 'save_config_str', 'copy_config_file',
+    'import_config', 'convert_config', 'get_ckpt_save_dir'
+]
+
 TRAINING_INDEPENDENT_FLAG = '_TRAINING_INDEPENDENT'
 
 TRAINING_INDEPENDENT_KEYS = {
@@ -189,7 +194,7 @@ def config_md5(cfg: Dict) -> str:
     return m.hexdigest()
 
 
-def save_config(cfg: Dict, file_path: str):
+def save_config_str(cfg: Dict, file_path: str):
     """Save config
 
     Args:
@@ -245,10 +250,24 @@ def import_config(path: str, verbose: bool = True) -> Dict:
 
 
 def convert_config(cfg: Dict):
-    """Add MD5 to cfg and convert `CKPT_SAVE_DIR` in `CFG.TRAIN`.
+    """Add MD5 to cfg.
 
     Args:
-        cfg (Dict): config
+        cfg (Dict): config.
     """
-    cfg['MD5'] = config_md5(cfg)
-    cfg['TRAIN']['CKPT_SAVE_DIR'] = os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], cfg['MD5'])
+
+    if cfg.get('MD5') is None:
+        cfg['MD5'] = config_md5(cfg)
+
+
+def get_ckpt_save_dir(cfg: Dict) -> str:
+    """Get real ckpt save dir with MD5.
+
+    Args:
+        cfg (Dict): config.
+
+    Returns:
+        str: Real ckpt save dir
+    """
+
+    return os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], cfg['MD5'])

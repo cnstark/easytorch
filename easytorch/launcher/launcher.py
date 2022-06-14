@@ -1,7 +1,7 @@
 import os
 from typing import Callable, Dict, Union, Tuple
 
-from ..config import import_config, save_config, copy_config_file, convert_config
+from ..config import import_config, save_config_str, copy_config_file, convert_config, get_ckpt_save_dir
 from ..utils import set_gpus
 from .dist_wrap import dist_wrap
 
@@ -17,11 +17,12 @@ def init_cfg(cfg: Union[Dict, str], save: bool = False):
     convert_config(cfg)
 
     # save config
-    if save and not os.path.isdir(cfg['TRAIN']['CKPT_SAVE_DIR']):
-        os.makedirs(cfg['TRAIN']['CKPT_SAVE_DIR'])
-        save_config(cfg, os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], 'cfg.txt'))
+    ckpt_save_dir = get_ckpt_save_dir(cfg)
+    if save and not ckpt_save_dir:
+        os.makedirs(ckpt_save_dir)
+        save_config_str(cfg, os.path.join(ckpt_save_dir, 'cfg.txt'))
         if cfg_path is not None:
-            copy_config_file(cfg_path, cfg['TRAIN']['CKPT_SAVE_DIR'])
+            copy_config_file(cfg_path, ckpt_save_dir)
 
     return cfg
 
