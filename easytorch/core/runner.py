@@ -16,6 +16,7 @@ from .meter_pool import MeterPool
 from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
 from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
+from ..config import get_ckpt_save_dir
 from ..utils import TimePredictor, get_logger, get_local_rank, is_master, master_only, set_env
 
 
@@ -30,7 +31,7 @@ class Runner(metaclass=ABCMeta):
         # param
         self.use_gpu = cfg.get('GPU_NUM', 0) != 0
         self.model_name = cfg['MODEL']['NAME']
-        self.ckpt_save_dir = cfg['TRAIN']['CKPT_SAVE_DIR']
+        self.ckpt_save_dir = get_ckpt_save_dir(cfg)
         self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
         self.ckpt_save_strategy = None
         self.num_epochs = None
