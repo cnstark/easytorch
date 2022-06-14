@@ -1,12 +1,9 @@
 import os
 from typing import Callable, Dict, Union, Tuple
 
-import torch
-
 from ..config import import_config, save_config, copy_config_file, convert_config
 from ..utils import set_gpus
-from .dist import dist_wrap
-from .train import train
+from .dist_wrap import dist_wrap
 
 
 def init_cfg(cfg: Union[Dict, str], save: bool = False):
@@ -29,6 +26,27 @@ def init_cfg(cfg: Union[Dict, str], save: bool = False):
     return cfg
 
 
+def training_func(cfg: Dict):
+    """Start training
+
+    1. Init runner defined by `cfg`
+    2. Init logger
+    3. Call `train()` method in the runner
+
+    Args:
+        cfg (Dict): Easytorch config.
+    """
+
+    # init runner
+    runner = cfg['RUNNER'](cfg)
+
+    # init logger (after making ckpt save dir)
+    runner.init_logger(logger_name='easytorch-training', log_file_name='training_log')
+
+    # train
+    runner.train(cfg)
+
+
 def launch_training(cfg: Union[Dict, str], gpus: str, node_rank: int = 0):
     """Launch training process defined by `cfg`.
 
@@ -49,26 +67,17 @@ def launch_training(cfg: Union[Dict, str], gpus: str, node_rank: int = 0):
 
     cfg = init_cfg(cfg, node_rank == 0)
 
-    gpu_num = cfg.get('GPU_NUM', 0)
-
-    if gpu_num != 0:
+    if cfg.get('GPU_NUM', 0) != 0:
         set_gpus(gpus)
 
-        device_count = torch.cuda.device_count()
-        if gpu_num != device_count:
-            raise RuntimeError('GPU num not match, cfg.GPU_NUM = {:d}, but torch.cuda.device_count() = {:d}'.format(
-                gpu_num, device_count
-            ))
-
     train_dist = dist_wrap(
-        train,
+        training_func,
         node_num=cfg.get('DIST_NODE_NUM', 1),
-        gpu_num=gpu_num,
+        gpu_num=cfg.get('GPU_NUM', 0),
         node_rank=node_rank,
         dist_backend=cfg.get('DIST_BACKEND'),
         init_method=cfg.get('DIST_INIT_METHOD')
     )
-
     train_dist(cfg)
 
 
@@ -90,7 +99,8 @@ def launch_runner(cfg: Union[Dict, str], fn: Callable, args: Tuple = (), gpus: s
     if cfg.get('GPU_NUM', 0) != 0:
         set_gpus(gpus)
 
-    Runner = cfg['RUNNER']
-    runner = Runner(cfg)
+    # init runner
+    runner = cfg['RUNNER'](cfg)
 
+    # call fn
     fn(cfg, runner, *args)

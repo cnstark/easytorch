@@ -70,6 +70,11 @@ def dist_wrap(func: Callable,
         if node_rank >= node_num:
             raise ValueError('The node_rank must be less than dist_node_num!')
 
+        if gpu_num != torch.cuda.device_count():
+            raise RuntimeError('GPU num not match, cfg.GPU_NUM = {:d}, but torch.cuda.device_count() = {:d}'.format(
+                gpu_num, torch.cuda.device_count()
+            ))
+
         dist_backend = 'nccl' if dist_backend is None else dist_backend
 
         if init_method is None:
