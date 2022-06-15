@@ -13,7 +13,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 
 from .meter_pool import MeterPool
-from .checkpoint import get_ckpt_dict, load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
+from .checkpoint import load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
 from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
 from ..config import get_ckpt_save_dir
@@ -213,6 +213,7 @@ class Runner(metaclass=ABCMeta):
         ckpt_name = '{}_{}.pt'.format(self.model_name, epoch_str)
         return os.path.join(self.ckpt_save_dir, ckpt_name)
 
+    @master_only
     def save_model(self, epoch: int):
         """Save checkpoint every epoch.
 
@@ -228,7 +229,13 @@ class Runner(metaclass=ABCMeta):
             epoch (int): current epoch.
         """
 
-        ckpt_dict = get_ckpt_dict(self.model, self.optim, epoch)
+        model = self.model.module if isinstance(self.model, DDP) else self.model
+        ckpt_dict = {
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optim_state_dict': self.optim.state_dict(),
+            'best_metrics': self.best_metrics
+        }
 
         # backup last epoch
         last_ckpt_path = self.get_ckpt_path(epoch - 1)
@@ -263,6 +270,7 @@ class Runner(metaclass=ABCMeta):
                 self.model.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             self.optim.load_state_dict(checkpoint_dict['optim_state_dict'])
             self.start_epoch = checkpoint_dict['epoch']
+            self.best_metrics = checkpoint_dict['best_metrics']
             if self.scheduler is not None:
                 self.scheduler.last_epoch = checkpoint_dict['epoch']
             self.logger.info('resume training')
@@ -435,8 +443,7 @@ class Runner(metaclass=ABCMeta):
         if self.val_data_loader is not None and epoch % self.val_interval == 0:
             self.validate(train_epoch=epoch)
         # save model
-        if is_master():
-            self.save_model(epoch)
+        self.save_model(epoch)
         # reset meters
         self.reset_epoch_meters()
 
@@ -571,7 +578,13 @@ class Runner(metaclass=ABCMeta):
         best_metric = self.best_metrics.get(metric_name)
         if best_metric is None or (metric > best_metric if greater_best else metric < best_metric):
             self.best_metrics[metric_name] = metric
-            ckpt_dict = get_ckpt_dict(self.model, self.optim, epoch)
+            model = self.model.module if isinstance(self.model, DDP) else self.model
+            ckpt_dict = {
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optim_state_dict': self.optim.state_dict(),
+                'best_metrics': self.best_metrics
+            }
             ckpt_path = os.path.join(
                 self.ckpt_save_dir,
                 '{}_best_{}.pt'.format(self.model_name, metric_name.replace('/', '_'))
