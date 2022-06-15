@@ -13,36 +13,6 @@ from ..utils import get_logger, get_local_rank
 DEFAULT_LOGGER = get_logger('easytorch-checkpoint')
 
 
-def get_ckpt_dict(model: nn.Module, optimizer: optim.Optimizer, epoch: int) -> Dict:
-    """Generate checkpoint dict.
-    checkpoint dict format:
-    {
-        'epoch': current epoch ([1, num_epochs]),
-        'model_state_dict': state_dict of model,
-        'optim_state_dict': state_dict of optimizer
-    }
-    if model is a module wrapper, use `model.module`
-
-    Args:
-        model (nn.Module): the model to be saved
-        optimizer (optim.Optimizer): the optimizer to be saved
-        epoch: current epoch
-
-    Returns:
-        checkpoint dict (Dict): generated checkpoint dict
-    """
-
-    if isinstance(model, DDP):
-        _model = model.module
-    else:
-        _model = model
-    return {
-        'epoch': epoch,
-        'model_state_dict': _model.state_dict(),
-        'optim_state_dict': optimizer.state_dict()
-    }
-
-
 def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = r'^.+_[\d]*.pt$') -> str:
     """Get last checkpoint path in `ckpt_save_dir`
     checkpoint files will be sorted by name
