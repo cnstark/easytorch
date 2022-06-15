@@ -270,7 +270,8 @@ class Runner(metaclass=ABCMeta):
                 self.model.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             self.optim.load_state_dict(checkpoint_dict['optim_state_dict'])
             self.start_epoch = checkpoint_dict['epoch']
-            self.best_metrics = checkpoint_dict['best_metrics']
+            if checkpoint_dict.get('best_metrics') is not None:
+                self.best_metrics = checkpoint_dict['best_metrics']
             if self.scheduler is not None:
                 self.scheduler.last_epoch = checkpoint_dict['epoch']
             self.logger.info('resume training')
