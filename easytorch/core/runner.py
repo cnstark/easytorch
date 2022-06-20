@@ -32,12 +32,16 @@ class Runner(metaclass=ABCMeta):
         self.use_gpu = cfg.get('GPU_NUM', 0) != 0
         self.model_name = cfg['MODEL']['NAME']
         self.ckpt_save_dir = get_ckpt_save_dir(cfg)
-        self.logger.info('ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
+        self.logger.info('Set ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
         self.ckpt_save_strategy = None
         self.num_epochs = None
         self.start_epoch = None
 
         self.val_interval = 1
+
+        # create checkpoint save dir
+        if not os.path.isdir(self.ckpt_save_dir):
+            os.makedirs(self.ckpt_save_dir)
 
         # create model
         self.model = self.build_model(cfg)
@@ -151,6 +155,7 @@ class Runner(metaclass=ABCMeta):
             train data loader (DataLoader)
         """
 
+        self.logger.info('Building training data loader.')
         dataset = self.build_train_dataset(cfg)
         if torch.distributed.is_initialized():
             return build_data_loader_ddp(dataset, cfg['TRAIN']['DATA'])
@@ -169,6 +174,7 @@ class Runner(metaclass=ABCMeta):
             val data loader (DataLoader)
         """
 
+        self.logger.info('Building val data loader.')
         dataset = self.build_val_dataset(cfg)
         return build_data_loader(dataset, cfg['VAL']['DATA'])
 
@@ -187,6 +193,7 @@ class Runner(metaclass=ABCMeta):
             model (nn.Module)
         """
 
+        self.logger.info('Building model.')
         model = self.define_model(cfg)
         model = self.to_running_device(model)
         if torch.distributed.is_initialized():
@@ -274,7 +281,7 @@ class Runner(metaclass=ABCMeta):
                 self.best_metrics = checkpoint_dict['best_metrics']
             if self.scheduler is not None:
                 self.scheduler.last_epoch = checkpoint_dict['epoch']
-            self.logger.info('resume training')
+            self.logger.info('Resume training')
         except (IndexError, OSError, KeyError):
             pass
 
@@ -371,6 +378,8 @@ class Runner(metaclass=ABCMeta):
             cfg (Dict): config
         """
 
+        self.logger.info('Initializing training.')
+
         # init training param
         self.num_epochs = cfg['TRAIN']['NUM_EPOCHS']
         self.start_epoch = 0
@@ -383,18 +392,18 @@ class Runner(metaclass=ABCMeta):
 
         # create optim
         self.optim = build_optim(cfg['TRAIN']['OPTIM'], self.model)
-        self.logger.info('set optim: ' + str(self.optim))
+        self.logger.info('Set optim: ' + str(self.optim))
 
         # create lr_scheduler
         if hasattr(cfg['TRAIN'], 'LR_SCHEDULER'):
             self.scheduler = build_lr_scheduler(cfg['TRAIN']['LR_SCHEDULER'], self.optim)
-            self.logger.info('set lr_scheduler: ' + str(self.scheduler))
+            self.logger.info('Set lr_scheduler: ' + str(self.scheduler))
             self.register_epoch_meter('lr', 'train', '{:.2e}')
 
         # fine tune
         if hasattr(cfg['TRAIN'], 'FINETUNE_FROM'):
             self.load_model(cfg['TRAIN']['FINETUNE_FROM'])
-            self.logger.info('start fine tuning')
+            self.logger.info('Start fine tuning')
 
         # resume
         self.load_model_resume()
@@ -418,7 +427,7 @@ class Runner(metaclass=ABCMeta):
         """
 
         # print epoch num
-        self.logger.info('epoch {:d} / {:d}'.format(epoch, self.num_epochs))
+        self.logger.info('Epoch {:d} / {:d}'.format(epoch, self.num_epochs))
         # update lr meter
         if self.scheduler is not None:
             self.update_epoch_meter('lr', self.scheduler.get_last_lr()[0])
@@ -498,13 +507,18 @@ class Runner(metaclass=ABCMeta):
         if train_epoch is None:
             self.init_validation(cfg)
 
+        self.logger.info('Start validation.')
+
         self.on_validating_start(train_epoch)
 
         val_start_time = time.time()
         self.model.eval()
 
+        # tqdm process bar
+        data_iter = tqdm(self.val_data_loader)
+
         # val loop
-        for iter_index, data in enumerate(self.val_data_loader):
+        for iter_index, data in enumerate(data_iter):
             self.val_iters(iter_index, data)
 
         val_end_time = time.time()
@@ -525,6 +539,7 @@ class Runner(metaclass=ABCMeta):
             cfg (Dict): config
         """
 
+        self.logger.info('Initializing validation.')
         self.val_interval = cfg['VAL'].get('INTERVAL', 1)
         self.val_data_loader = self.build_val_data_loader(cfg)
         self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)

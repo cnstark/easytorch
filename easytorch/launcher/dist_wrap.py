@@ -4,17 +4,37 @@ from typing import Callable, Dict, Union, Any, Optional
 
 import torch
 
+from ..utils import get_logger
+
 
 def dist_func(local_rank: int, dist_params: Dict[str, Any], func: Callable, *args):
-    torch.cuda.set_device(local_rank)
+    """_summary_
+
+    Args:
+        local_rank (int): _description_
+        dist_params (Dict[str, Any]): _description_
+        func (Callable): _description_
+    """
+
+    logger = get_logger('easytorch-launcher')
 
     rank = dist_params['gpu_num'] * dist_params['node_rank'] + local_rank
+    logger.info(
+        'Launching in distributed mode. Distributed parameters:'\
+        'word_size={:d}, node_rank={:d}, rank={:d}, local_rank={:d}, dist_backend={}, init_method={}'.format(
+            dist_params['word_size'], dist_params['node_rank'], rank, local_rank,
+            dist_params['dist_backend'], dist_params['init_method']
+        )
+    )
+
     torch.distributed.init_process_group(
         backend=dist_params['dist_backend'],
         init_method=dist_params['init_method'],
         rank=rank,
         world_size=dist_params['word_size']
     )
+
+    torch.cuda.set_device(local_rank)
 
     args, kwargs = args
     func(*args, **kwargs)
@@ -64,9 +84,11 @@ def dist_wrap(func: Callable,
 
     word_size = node_num * gpu_num
 
-    if word_size <= 1:
+    if word_size == 0:
+        # CPU mode
         return func
     else:
+        # GPU mode
         if node_rank >= node_num:
             raise ValueError('The node_rank must be less than dist_node_num!')
 
@@ -75,29 +97,33 @@ def dist_wrap(func: Callable,
                 gpu_num, torch.cuda.device_count()
             ))
 
-        dist_backend = 'nccl' if dist_backend is None else dist_backend
+        if word_size == 1:
+            return func
+        else:
+            # Distributed Data Parallel
+            dist_backend = 'nccl' if dist_backend is None else dist_backend
 
-        if init_method is None:
-            if node_num == 1:
-                init_method = 'tcp://127.0.0.1:{:d}'.format(random.randint(50000, 65000))
-            else:
-                raise ValueError('The init_method cannot be None in multiple compute nodes')
+            if init_method is None:
+                if node_num == 1:
+                    init_method = 'tcp://127.0.0.1:{:d}'.format(random.randint(50000, 65000))
+                else:
+                    raise ValueError('The init_method cannot be None in multiple compute nodes')
 
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            dist_params = {
-                'gpu_num': gpu_num,
-                'node_rank': node_rank,
-                'word_size': word_size,
-                'dist_backend': dist_backend,
-                'init_method': init_method
-            }
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                dist_params = {
+                    'gpu_num': gpu_num,
+                    'node_rank': node_rank,
+                    'word_size': word_size,
+                    'dist_backend': dist_backend,
+                    'init_method': init_method
+                }
 
-            torch.multiprocessing.spawn(
-                dist_func,
-                args=(dist_params, func, args, kwargs),
-                nprocs=gpu_num,
-                join=True
-            )
+                torch.multiprocessing.spawn(
+                    dist_func,
+                    args=(dist_params, func, args, kwargs),
+                    nprocs=gpu_num,
+                    join=True
+                )
 
-        return wrapper
+            return wrapper

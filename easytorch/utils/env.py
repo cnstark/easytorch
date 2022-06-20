@@ -19,8 +19,12 @@ def set_gpus(gpus: str):
         gpus (str): environment variable `CUDA_VISIBLE_DEVICES` value
     """
 
+    logger = get_logger('easytorch-env')
     if gpus is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = gpus
+        logger.info('Use GPUs {}.'.format(gpus))
+    else:
+        logger.info('Use all GPUs.')
 
 
 def set_tf32_mode(tf32_mode: bool):

@@ -105,7 +105,7 @@ class MeterPool:
                     print_list.append(
                         ('{}: ' + value['format']).format(name, value['meter'].avg)
                     )
-        print_str = '{}:: [{}]'.format(meter_type, ', '.join(print_list))
+        print_str = 'Result <{}>: [{}]'.format(meter_type, ', '.join(print_list))
         if logger is None:
             print(print_str)
         else:
