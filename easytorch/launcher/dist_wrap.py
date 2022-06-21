@@ -8,12 +8,12 @@ from ..utils import get_logger
 
 
 def dist_func(local_rank: int, dist_params: Dict[str, Any], func: Callable, *args):
-    """_summary_
+    """Distributed function for `torch.multiprocessing.spawn`
 
     Args:
-        local_rank (int): _description_
-        dist_params (Dict[str, Any]): _description_
-        func (Callable): _description_
+        local_rank (int): Local rank of current process group.
+        dist_params (Dict[str, Any]): Other distributed parameters.
+        func (Callable): A function.
     """
 
     logger = get_logger('easytorch-launcher')

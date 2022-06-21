@@ -75,7 +75,7 @@ def launch_training(cfg: Union[Dict, str], gpus: str = None, node_rank: int = 0)
     """
 
     logger = get_logger('easytorch-launcher')
-    logger.info('Launching EasyTorch training...')
+    logger.info('Launching EasyTorch training.')
 
     cfg = init_cfg(cfg, node_rank == 0)
 
@@ -107,7 +107,7 @@ def launch_runner(cfg: Union[Dict, str], fn: Callable, args: Tuple = (), gpus: s
     """
 
     logger = get_logger('easytorch-launcher')
-    logger.info('Launch EasyTorch runner.')
+    logger.info('Launching EasyTorch runner.')
 
     cfg = init_cfg(cfg, True)
 
