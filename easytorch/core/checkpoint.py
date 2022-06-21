@@ -52,7 +52,7 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True,
         map_location = 'cuda:{}'.format(get_local_rank())
     else:
         map_location = 'cpu'
-    logger.info('load ckpt from \'{}\''.format(ckpt_path))
+    logger.info('Loading Checkpoint from \'{}\''.format(ckpt_path))
     return torch.load(ckpt_path, map_location=map_location)
 
 
@@ -66,7 +66,7 @@ def save_ckpt(ckpt: Dict, ckpt_path: str, logger: Logger = DEFAULT_LOGGER):
     """
 
     torch.save(ckpt, ckpt_path)
-    logger.info('ckpt {} saved'.format(ckpt_path))
+    logger.info('Checkpoint {} saved'.format(ckpt_path))
 
 
 def need_to_remove_last_ckpt(last_epoch: int, ckpt_save_strategy: Union[int, List, Tuple]) -> bool:
