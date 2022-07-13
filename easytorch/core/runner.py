@@ -385,6 +385,9 @@ class Runner(metaclass=ABCMeta):
         self.start_epoch = 0
         self.ckpt_save_strategy = cfg['TRAIN'].get('CKPT_SAVE_STRATEGY')
         self.best_metrics = {}
+        self.clip_grad_param = cfg['TRAIN'].get('CLIP_GRAD_PARAM')
+        if self.clip_grad_param is not None:
+            self.logger.info('Set clip grad, param: {}'.format(self.clip_grad_param))
 
         # train data loader
         self.train_data_loader = self.build_train_data_loader(cfg)
@@ -491,6 +494,8 @@ class Runner(metaclass=ABCMeta):
 
         self.optim.zero_grad()
         loss.backward()
+        if self.clip_grad_param is not None:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), **self.clip_grad_param)
         self.optim.step()
 
     @torch.no_grad()
