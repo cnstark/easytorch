@@ -58,7 +58,7 @@ TODO
 * [MNIST手写数字识别](examples/mnist)
 * [ImageNet图像分类](examples/imagenet)
 
-*更多示例正在开发途中~*
+*更多示例正在开发途中*
 
 推荐参考成熟的开源项目[BasicTS](https://github.com/zezhishao/BasicTS)。
 

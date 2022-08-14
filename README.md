@@ -56,7 +56,7 @@ TODO
 * [MNIST Digit Recognition](examples/mnist)
 * [ImageNet Image Classification](examples/imagenet)
 
-*More examples are on the way ~*
+*More examples are on the way*
 
 It is recommended to refer to the excellent open source project [BasicTS](https://github.com/zezhishao/BasicTS).
 
