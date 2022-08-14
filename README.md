@@ -11,9 +11,9 @@ EasyTorch is an open source neural network framework based on PyTorch, which enc
 ## :sparkles: Highlight Characteristics
 
 * **Minimum Code**. EasyTorch encapsulates the general neural network training pipeline. Users only need to implement key codes such as `Dataset`, `Model`, and training/inference to build deep learning projects.
-* **Everything Based on Config**. The user controls the training mode and hyperparameters through the configuration file. EasyTorch automatically generates a unique result storage directory according to the MD5 of the configuration file content, which help users to adjust hyperparameters more conveniently.
-* **Support All Devices**. EasyTorch supports CPU, GPU and GPU distributed training (single node multiple GPUs and multiple nodes). Users can use it through configuration parameters without modifying any code.
-* **Save Training Log**. Support `logging` log system and `Tensorboard`, and encapsulate it as a unified interface, users can save customized training logs by calling a simple interface.
+* **Everything Based on Config**. Users control the training mode and hyperparameters through the config file. EasyTorch automatically generates a unique result storage directory according to the MD5 of the config file content, which help users to adjust hyperparameters more conveniently.
+* **Support All Devices**. EasyTorch supports CPU, GPU and GPU distributed training (single node multiple GPUs and multiple nodes). Users can use it by setting parameters without modifying any code.
+* **Save Training Log**. Support `logging` log system and `Tensorboard`, and encapsulate it as a unified interface, users can save customized training logs by calling simple interfaces.
 
 ## :wrench: Dependence
 
