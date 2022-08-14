@@ -8,7 +8,7 @@
 
 ---
 
-Easytorch是一个基于PyTorch的开源神经网络训练框架，封装了PyTorch项目中常用的功能，帮助用户快速构建深度学习项目。
+EasyTorch是一个基于PyTorch的开源神经网络训练框架，封装了PyTorch项目中常用的功能，帮助用户快速构建深度学习项目。
 
 ## 功能亮点
 
@@ -35,9 +35,7 @@ python >= 3.6 （推荐 >= 3.7）
 
 ### PyTorch及CUDA
 
-[pytorch](https://pytorch.org/) >= 1.4（推荐 >= 1.7）
-
-[CUDA](https://developer.nvidia.com/zh-cn/cuda-toolkit) >= 9.2 （推荐 >= 11.0）
+[pytorch](https://pytorch.org/) >= 1.4（推荐 >= 1.7），如需使用CUDA，安装PyTorch时选择对应CUDA版本编译的包。
 
 注意：如需使用安培（Ampere）架构GPU，PyTorch版本需 >= 1.7且CUDA版本 >= 11.0。
 
@@ -51,6 +49,23 @@ pip install -r requirements.txt
 
 * [线性回归](examples/linear_regression)
 * [MNIST手写数字识别](examples/mnist)
+* [ImageNet图像分类](examples/imagenet)
+
+## 开始使用
+
+### 安装EasyTorch
+
+```shell
+pip install easy-torch
+```
+
+### 复制EasyTorch模板至工作目录
+
+```shell
+cp -r easytorch/examples/template/* .
+```
+
+*接下来就可以使用EasyTorch构建你的深度学习项目。*
 
 ## README 徽章
 
