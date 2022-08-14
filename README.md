@@ -83,3 +83,5 @@ If your project is using EasyTorch, please consider put the EasyTorch badge [![E
 ```
 [![EasyTorch](https://img.shields.io/badge/Developing%20with-EasyTorch-2077ff.svg)](https://github.com/cnstark/easytorch)
 ```
+
+***(Full documentation is coming soon)***

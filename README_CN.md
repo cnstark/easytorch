@@ -85,3 +85,5 @@ BibTex引用条目如下（需要`url`包）。
 ```
 [![EasyTorch](https://img.shields.io/badge/Developing%20with-EasyTorch-2077ff.svg)](https://github.com/cnstark/easytorch)
 ```
+
+***（完整的文档即将推出）***
