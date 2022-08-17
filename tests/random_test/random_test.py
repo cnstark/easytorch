@@ -1,10 +1,8 @@
-import os
-import sys
-sys.path.append('../..')
 import random
-import numpy as np
+from typing import Dict, Tuple, Union
 
 from easydict import EasyDict
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import Dataset
@@ -13,10 +11,13 @@ from easytorch import Runner, get_rank, launch_training
 
 
 class FakeDataset(Dataset):
-    def __init__(self, num: int, min: int, max: int):
+    """FakeDataset
+    """
+
+    def __init__(self, num: int, min_: int, max_: int):
         self.num = num
-        self.min = min
-        self.max = max
+        self.min = min_
+        self.max = max_
 
     def __getitem__(self, index):
         return index, \
@@ -29,15 +30,18 @@ class FakeDataset(Dataset):
 
 
 class DDPTestRunner(Runner):
+    """DDPTestRunner
+    """
+
     @staticmethod
-    def define_model(cfg: dict) -> nn.Module:
+    def define_model(cfg: Dict) -> nn.Module:
         return nn.Conv2d(3, 3, 3)
 
     @staticmethod
-    def build_train_dataset(cfg: dict):
+    def build_train_dataset(cfg: Dict):
         return FakeDataset(cfg['TRAIN']['DATA']['NUM'], cfg['TRAIN']['DATA']['MIN'], cfg['TRAIN']['DATA']['MAX'])
 
-    def train_iters(self, epoch, iter_index, data):
+    def train_iters(self, epoch: int, iter_index: int, data: Union[torch.Tensor, Tuple]) -> torch.Tensor:
         print('rank: {:d}, epoch: {:d}, iter: {:d}, data: {}'.format(get_rank(), epoch, iter_index, data))
         if torch.distributed.is_initialized():
             torch.distributed.barrier()
@@ -82,7 +86,7 @@ def build_cfg():
     return CFG
 
 
-if __name__ == "__main__":
-    cfg = build_cfg()
+if __name__ == '__main__':
+    cfg_ = build_cfg()
 
-    launch_training(cfg, gpus='0,1,2,3,4,5,6,7,8')
+    launch_training(cfg_, gpus='0,1,2,3,4,5,6,7,8')

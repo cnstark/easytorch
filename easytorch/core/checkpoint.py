@@ -5,8 +5,6 @@ from logging import Logger
 from typing import Dict, List, Tuple, Union
 
 import torch
-from torch import nn, optim
-from torch.nn.parallel import DistributedDataParallel as DDP
 
 from ..utils import get_logger, get_local_rank
 
@@ -14,7 +12,7 @@ DEFAULT_LOGGER = get_logger('easytorch-checkpoint')
 
 
 def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = r'^.+_[\d]*.pt$') -> str:
-    """Get last checkpoint path in `ckpt_save_dir`
+    r"""Get last checkpoint path in `ckpt_save_dir`
     checkpoint files will be sorted by name
 
     Args:

@@ -1,0 +1,16 @@
+{
+    "files.trimTrailingWhitespace": true,
+    "editor.rulers": [
+        80,
+        120
+    ],
+    "editor.renderWhitespace": "all",
+    "editor.renderControlCharacters": true,
+    "python.formatting.provider": "yapf",
+    "python.formatting.yapfArgs": [
+        "--style",
+        "{based_on_style: google, indent_width: 4, column_limit: 120}"
+    ],
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+}

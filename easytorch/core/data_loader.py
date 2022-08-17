@@ -4,6 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 from ..utils import get_rank, get_world_size
+from ..utils.data_prefetcher import DataLoaderX
 
 
 def build_data_loader(dataset: Dataset, data_cfg: Dict):
@@ -29,7 +30,6 @@ def build_data_loader(dataset: Dataset, data_cfg: Dict):
     """
 
     if data_cfg.get('PREFETCH', False):
-        from ..utils.data_prefetcher import DataLoaderX
         return DataLoaderX(
             dataset,
             collate_fn=data_cfg.get('COLLATE_FN', None),
@@ -78,7 +78,6 @@ def build_data_loader_ddp(dataset: Dataset, data_cfg: Dict):
         shuffle=data_cfg.get('SHUFFLE', False)
     )
     if data_cfg.get('PREFETCH', False):
-        from ..utils.data_prefetcher import DataLoaderX
         return DataLoaderX(
             dataset,
             collate_fn=data_cfg.get('COLLATE_FN', None),

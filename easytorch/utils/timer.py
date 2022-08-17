@@ -91,6 +91,9 @@ class Timer:
 
 
 class TimePredictor:
+    """TimePredictor
+    """
+
     def __init__(self, start_step: int, end_step: int):
         self.start_step = start_step
         self.end_step = end_step

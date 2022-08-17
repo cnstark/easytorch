@@ -2,6 +2,9 @@ from torch import nn
 
 
 class ConvNet(nn.Module):
+    """Simple ConvNet for MNIST classification.
+    """
+
     def __init__(self):
         super().__init__()
         self.conv_block = nn.Sequential(

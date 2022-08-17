@@ -21,6 +21,9 @@ from ..utils import TimePredictor, get_logger, get_local_rank, is_master, master
 
 
 class Runner(metaclass=ABCMeta):
+    """Base EasyTorch Runner
+    """
+
     def __init__(self, cfg: Dict):
         # default logger
         self.logger = get_logger('easytorch')
@@ -75,7 +78,7 @@ class Runner(metaclass=ABCMeta):
             self.logger = logger
         elif logger_name is not None:
             if log_file_name is not None:
-                log_file_name = '{}_{}.log'.format(log_file_name, time.strftime("%Y%m%d%H%M%S", time.localtime()))
+                log_file_name = '{}_{}.log'.format(log_file_name, time.strftime('%Y%m%d%H%M%S', time.localtime()))
                 log_file_path = os.path.join(self.ckpt_save_dir, log_file_name)
             else:
                 log_file_path = None
@@ -105,7 +108,7 @@ class Runner(metaclass=ABCMeta):
         """It must be implement to define the model for training or inference.
 
         Users can select different models by param in cfg.
-        
+
         Args:
             cfg (Dict): config
 
@@ -304,8 +307,8 @@ class Runner(metaclass=ABCMeta):
                 self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             else:
                 self.model.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
-        except (IndexError, OSError):
-            raise OSError('Ckpt file does not exist')
+        except (IndexError, OSError) as e:
+            raise OSError('Ckpt file does not exist') from e
 
     def train(self, cfg: Dict):
         """Train model.
@@ -395,12 +398,12 @@ class Runner(metaclass=ABCMeta):
 
         # create optim
         self.optim = build_optim(cfg['TRAIN']['OPTIM'], self.model)
-        self.logger.info('Set optim: ' + str(self.optim))
+        self.logger.info('Set optim: {}'.format(self.optim))
 
         # create lr_scheduler
         if hasattr(cfg['TRAIN'], 'LR_SCHEDULER'):
             self.scheduler = build_lr_scheduler(cfg['TRAIN']['LR_SCHEDULER'], self.optim)
-            self.logger.info('Set lr_scheduler: ' + str(self.scheduler))
+            self.logger.info('Set lr_scheduler: {}'.format(self.scheduler))
             self.register_epoch_meter('lr', 'train', '{:.2e}')
 
         # fine tune

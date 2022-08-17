@@ -41,16 +41,15 @@ def build_optim(optim_cfg: Dict, model: nn.Module) -> optim.Optimizer:
         optimizer (optim.Optimizer)
     """
 
-    optim_type = optim_cfg['TYPE']
-    if isinstance(optim_type, type):
-        Optim = optim_type
+    if isinstance(optim_cfg['TYPE'], type):
+        optim_type = optim_cfg['TYPE']
     else:
-        if hasattr(optim, optim_type):
-            Optim = getattr(optim, optim_type)
+        if hasattr(optim, optim_cfg['TYPE']):
+            optim_type = getattr(optim, optim_cfg['TYPE'])
         else:
-            Optim = getattr(easyoptim, optim_type)
+            optim_type = getattr(easyoptim, optim_cfg['TYPE'])
     optim_param = optim_cfg['PARAM'].copy()
-    optimizer = Optim(model.parameters(), **optim_param)
+    optimizer = optim_type(model.parameters(), **optim_param)
     return optimizer
 
 
@@ -89,15 +88,15 @@ def build_lr_scheduler(lr_scheduler_cfg: Dict, optimizer: optim.Optimizer) -> lr
         LRScheduler
     """
 
-    lr_scheduler_type = lr_scheduler_cfg['TYPE']
-    if isinstance(lr_scheduler_type, type):
-        Scheduler = lr_scheduler_type
+    lr_scheduler_cfg['TYPE'] = lr_scheduler_cfg['TYPE']
+    if isinstance(lr_scheduler_cfg['TYPE'], type):
+        scheduler_type = lr_scheduler_cfg['TYPE']
     else:
-        if hasattr(lr_scheduler, lr_scheduler_type):
-            Scheduler = getattr(lr_scheduler, lr_scheduler_type)
+        if hasattr(lr_scheduler, lr_scheduler_cfg['TYPE']):
+            scheduler_type = getattr(lr_scheduler, lr_scheduler_cfg['TYPE'])
         else:
-            Scheduler = getattr(easy_lr_scheduler, lr_scheduler_type)
+            scheduler_type = getattr(easy_lr_scheduler, lr_scheduler_cfg['TYPE'])
     scheduler_param = lr_scheduler_cfg['PARAM'].copy()
     scheduler_param['optimizer'] = optimizer
-    scheduler = Scheduler(**scheduler_param)
+    scheduler = scheduler_type(**scheduler_param)
     return scheduler
