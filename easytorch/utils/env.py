@@ -21,7 +21,7 @@ def set_gpus(gpus: str):
 
     logger = get_logger('easytorch-env')
     if gpus is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = gpus
+        os.environ['CUDA_VISIBLE_DEVICES'] = gpus
         logger.info('Use GPUs {}.'.format(gpus))
     else:
         logger.info('Use all GPUs.')

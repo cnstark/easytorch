@@ -26,6 +26,9 @@ def accuracy(output, target, topk=(1,)):
 
 
 class ImagenetRunner(Runner):
+    """ImagenetRunner
+    """
+
     def __init__(self, cfg: Dict):
         super().__init__(cfg)
 
@@ -111,6 +114,6 @@ class ImagenetRunner(Runner):
         self.update_epoch_meter('val/acc@5', acc5[0], images.size(0))
 
     def on_validating_end(self, train_epoch: Optional[int]):
-        # `None` means validation mode 
+        # `None` means validation mode
         if train_epoch is not None:
             self.save_best_model(train_epoch, 'val/acc@1', greater_best=True)

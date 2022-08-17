@@ -6,6 +6,9 @@ from dataset import LinearDataset
 
 
 class LinearRegressionRunner(Runner):
+    """LinearRegressionRunner
+    """
+
     def init_training(self, cfg):
         """Initialize training.
 

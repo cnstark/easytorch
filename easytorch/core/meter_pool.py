@@ -134,6 +134,8 @@ class MeterPool:
 
 
 class MeterPoolDDP(MeterPool):
+    """MeterPoolDDP
+    """
     # TODO(Yuhao Wang): not support
 
     def to_tensor(self):

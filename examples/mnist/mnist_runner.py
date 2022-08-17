@@ -1,3 +1,6 @@
+from typing import Dict, Union, Tuple
+
+import torch
 from torch import nn
 import torchvision
 
@@ -7,13 +10,16 @@ from conv_net import ConvNet
 
 
 class MNISTRunner(Runner):
-    def init_training(self, cfg):
+    """MNISTRunner
+    """
+
+    def init_training(self, cfg: Dict):
         """Initialize training.
 
         Including loss, training meters, etc.
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
         """
 
         super().init_training(cfg)
@@ -23,13 +29,13 @@ class MNISTRunner(Runner):
 
         self.register_epoch_meter('train_loss', 'train', '{:.2f}')
 
-    def init_validation(self, cfg: dict):
+    def init_validation(self, cfg: Dict):
         """Initialize validation.
 
         Including validation meters, etc.
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
         """
 
         super().init_validation(cfg)
@@ -37,14 +43,14 @@ class MNISTRunner(Runner):
         self.register_epoch_meter('val_acc', 'val', '{:.2f}%')
 
     @staticmethod
-    def define_model(cfg: dict) -> nn.Module:
+    def define_model(cfg: Dict) -> nn.Module:
         """Define model.
 
         If you have multiple models, insert the name and class into the dict below,
         and select it through ```config```.
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
 
         Returns:
             model (nn.Module)
@@ -55,11 +61,11 @@ class MNISTRunner(Runner):
         }[cfg['MODEL']['NAME']](**cfg['MODEL'].get('PARAM', {}))
 
     @staticmethod
-    def build_train_dataset(cfg: dict):
+    def build_train_dataset(cfg: Dict):
         """Build MNIST train dataset
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
 
         Returns:
             train dataset (Dataset)
@@ -75,11 +81,11 @@ class MNISTRunner(Runner):
         )
 
     @staticmethod
-    def build_val_dataset(cfg: dict):
+    def build_val_dataset(cfg: Dict):
         """Build MNIST val dataset
 
         Args:
-            cfg (dict): config
+            cfg (Dict): config
 
         Returns:
             train dataset (Dataset)
@@ -94,7 +100,7 @@ class MNISTRunner(Runner):
             ])
         )
 
-    def train_iters(self, epoch, iter_index, data):
+    def train_iters(self, epoch: int, iter_index: int, data: Union[torch.Tensor, Tuple]) -> torch.Tensor:
         """Training details.
 
         Args:
@@ -106,16 +112,16 @@ class MNISTRunner(Runner):
             loss (torch.Tensor)
         """
 
-        _input, _target = data
-        _input = self.to_running_device(_input)
-        _target = self.to_running_device(_target)
+        input_, target_ = data
+        input_ = self.to_running_device(input_)
+        target_ = self.to_running_device(target_)
 
-        output = self.model(_input)
-        loss = self.loss(output, _target)
+        output = self.model(input_)
+        loss = self.loss(output, target_)
         self.update_epoch_meter('train_loss', loss.item())
         return loss
 
-    def val_iters(self, iter_index, data):
+    def val_iters(self, iter_index: int, data: Union[torch.Tensor, Tuple]):
         """Validation details.
 
         Args:
@@ -123,10 +129,10 @@ class MNISTRunner(Runner):
             data (torch.Tensor or tuple): Data provided by DataLoader
         """
 
-        _input, _target = data
-        _input = self.to_running_device(_input)
-        _target = self.to_running_device(_target)
+        input_, target_ = data
+        input_ = self.to_running_device(input_)
+        target_ = self.to_running_device(target_)
 
-        output = self.model(_input)
+        output = self.model(input_)
         pred = output.data.max(1, keepdim=True)[1]
-        self.update_epoch_meter('val_acc', 100 * pred.eq(_target.data.view_as(pred)).sum())
+        self.update_epoch_meter('val_acc', 100 * pred.eq(target_.data.view_as(pred)).sum())
