@@ -70,8 +70,12 @@ class Registry(Iterable[Tuple[str, Any]]):
             )
         return ret
 
-    def build(self, name: str, params: Dict[str, Any]):
-        return self.get(name)(**deepcopy(params))
+    def build(self, name: str, params: Dict[str, Any] = None):
+        if params is None:
+            params = {}
+        else:
+            params = deepcopy(params)
+        return self.get(name)(**params)
 
     def __contains__(self, name: str) -> bool:
         return name in self._obj_map
