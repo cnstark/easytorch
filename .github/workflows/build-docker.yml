@@ -5,13 +5,20 @@ on: push
 jobs:
   build:
     runs-on: ubuntu-latest
-    # if: startsWith(github.event.ref, 'refs/tags')
+    if: startsWith(github.event.ref, 'refs/tags')
 
     strategy:
       matrix:
         base-image-tag:
+          - "1.4.0-py3.8.13-cuda10.1-ubuntu18.04"
+          - "1.5.1-py3.8.13-cuda10.2-ubuntu18.04"
+          - "1.6.0-py3.8.13-cuda10.2-ubuntu18.04"
+          - "1.7.1-py3.9.12-cuda11.0-ubuntu18.04"
+          - "1.8.1-py3.9.12-cuda11.1-ubuntu20.04"
           - "1.9.1-py3.9.12-cuda11.1-ubuntu20.04"
           - "1.10.2-py3.9.12-cuda11.3.1-ubuntu20.04"
+          - "1.11.0-py3.9.12-cuda11.3.1-ubuntu20.04"
+          - "1.12.1-py3.9.12-cuda11.6.2-ubuntu20.04"
 
     steps:
       - uses: actions/checkout@v2
