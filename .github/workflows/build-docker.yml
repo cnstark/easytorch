@@ -1,0 +1,44 @@
+name: Build Docker Image
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.ref, 'refs/tags')
+
+    strategy:
+      matrix:
+        base-image-tag:
+          - "1.4.0-py3.8.13-cuda10.1-ubuntu18.04"
+          - "1.5.1-py3.8.13-cuda10.2-ubuntu18.04"
+          - "1.6.0-py3.8.13-cuda10.2-ubuntu18.04"
+          - "1.7.1-py3.9.12-cuda11.0-ubuntu18.04"
+          - "1.8.1-py3.9.12-cuda11.1-ubuntu20.04"
+          - "1.9.1-py3.9.12-cuda11.1-ubuntu20.04"
+          - "1.10.2-py3.9.12-cuda11.3.1-ubuntu20.04"
+          - "1.11.0-py3.9.12-cuda11.3.1-ubuntu20.04"
+          - "1.12.1-py3.9.12-cuda11.6.2-ubuntu20.04"
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get version
+        id: get_version
+        run: |
+         echo "EASYTORCH_VERSION=`cd easytorch && python -c '''from version import __version__; print(__version__)'''`" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${{ matrix.base-image-tag }}" >> $GITHUB_ENV
+
+      - name: Login DockerHub
+        run: docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build docker image
+        run: |
+          docker build \
+            --build-arg IMAGE_TAG=${IMAGE_TAG} \
+            -t cnstark/easytorch:${EASYTORCH_VERSION}-${IMAGE_TAG} \
+            -f docker/Dockerfile \
+            .
+
+      - name: Push docker image
+        run: docker push cnstark/easytorch:${EASYTORCH_VERSION}-${IMAGE_TAG}
