@@ -408,7 +408,7 @@ class Runner(metaclass=ABCMeta):
 
         # fine tune
         if hasattr(cfg['TRAIN'], 'FINETUNE_FROM'):
-            self.load_model(cfg['TRAIN']['FINETUNE_FROM'])
+            self.load_model(cfg['TRAIN']['FINETUNE_FROM'], cfg['TRAIN'].get('FINETUNE_STRICT_LOAD', True))
             self.logger.info('Start fine tuning')
 
         # resume
