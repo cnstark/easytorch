@@ -151,6 +151,9 @@ class Config(dict):
         else:
             return value
 
+    def has(self, key):
+        return self.get(key) is not None
+
     def get(self, key, default=None):
         try:
             return self[key]

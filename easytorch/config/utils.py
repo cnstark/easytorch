@@ -1,6 +1,6 @@
 """Everything is based on config.
 
-`Config` is the set of all configurations. `Config` is is implemented by `dict`, We recommend using `EasyDict`.
+`Config` is the set of all configurations. `Config` is is implemented by `dict`, We recommend using `Config`.
 
 Look at the following example:
 
@@ -8,20 +8,20 @@ cfg.py
 
 ```python
 import os
-from easydict import EasyDict
+from easytorch import Config
 
 from my_runner import MyRunner
 
-CFG = EasyDict()
+CFG = {}
 
 CFG.DESC = 'my net'  # customized description
 CFG.RUNNER = MyRunner
 CFG.GPU_NUM = 1
 
-CFG.MODEL = EasyDict()
+CFG.MODEL = {}
 CFG.MODEL.NAME = 'my_net'
 
-CFG.TRAIN = EasyDict()
+CFG.TRAIN = {}
 
 CFG.TRAIN.NUM_EPOCHS = 100
 CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
@@ -30,25 +30,25 @@ CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
 )
 CFG.TRAIN.CKPT_SAVE_STRATEGY = None
 
-CFG.TRAIN.OPTIM = EasyDict()
+CFG.TRAIN.OPTIM = {}
 CFG.TRAIN.OPTIM.TYPE = 'SGD'
 CFG.TRAIN.OPTIM.PARAM = {
     'lr': 0.002,
     'momentum': 0.1,
 }
 
-CFG.TRAIN.DATA = EasyDict()
+CFG.TRAIN.DATA = {}
 CFG.TRAIN.DATA.BATCH_SIZE = 4
 CFG.TRAIN.DATA.DIR = './my_data'
 CFG.TRAIN.DATA.SHUFFLE = True
 CFG.TRAIN.DATA.PIN_MEMORY = True
 CFG.TRAIN.DATA.PREFETCH = True
 
-CFG.VAL = EasyDict()
+CFG.VAL = {}
 
 CFG.VAL.INTERVAL = 1
 
-CFG.VAL.DATA = EasyDict()
+CFG.VAL.DATA = {}
 CFG.VAL.DATA.DIR = 'mnist_data'
 
 CFG._TRAINING_INDEPENDENT` = [
@@ -78,6 +78,8 @@ import types
 import copy
 import hashlib
 from typing import Dict, Set, List, Union
+
+from .config import Config
 
 __all__ = [
     'config_str', 'config_md5', 'save_config_str', 'copy_config_file',
@@ -249,15 +251,18 @@ def import_config(path: str, verbose: bool = True) -> Dict:
     return cfg
 
 
-def convert_config(cfg: Dict):
-    """Add MD5 to cfg.
+def convert_config(cfg: Dict) -> Config:
+    """Convert cfg to `Config`; add MD5 to cfg.
 
     Args:
         cfg (Dict): config.
     """
 
+    if not isinstance(cfg, Config):
+        cfg = Config(cfg)
     if cfg.get('MD5') is None:
         cfg['MD5'] = config_md5(cfg)
+    return Config
 
 
 def get_ckpt_save_dir(cfg: Dict) -> str:

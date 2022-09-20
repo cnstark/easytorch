@@ -2,7 +2,7 @@ import os
 import time
 import logging
 from abc import ABCMeta, abstractmethod
-from typing import Dict, Tuple, Union, Optional
+from typing import Tuple, Union, Optional
 
 from tqdm import tqdm
 import torch
@@ -16,7 +16,7 @@ from .meter_pool import MeterPool
 from .checkpoint import load_ckpt, save_ckpt, backup_last_ckpt, clear_ckpt
 from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
-from ..config import get_ckpt_save_dir
+from ..config import Config, get_ckpt_save_dir
 from ..utils import TimePredictor, get_logger, get_local_rank, is_master, master_only, set_env
 
 
@@ -24,7 +24,7 @@ class Runner(metaclass=ABCMeta):
     """Base EasyTorch Runner
     """
 
-    def __init__(self, cfg: Dict):
+    def __init__(self, cfg: Config):
         # default logger
         self.logger = get_logger('easytorch')
 
@@ -33,7 +33,7 @@ class Runner(metaclass=ABCMeta):
 
         # param
         self.use_gpu = cfg.get('GPU_NUM', 0) != 0
-        self.model_name = cfg['MODEL']['NAME']
+        self.model_name = cfg['MODEL.NAME']
         self.ckpt_save_dir = get_ckpt_save_dir(cfg)
         self.logger.info('Set ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
         self.ckpt_save_strategy = None
@@ -104,7 +104,7 @@ class Runner(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def define_model(cfg: Dict) -> nn.Module:
+    def define_model(cfg: Config) -> nn.Module:
         """It must be implement to define the model for training or inference.
 
         Users can select different models by param in cfg.
@@ -120,7 +120,7 @@ class Runner(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def build_train_dataset(cfg: Dict) -> Dataset:
+    def build_train_dataset(cfg: Config) -> Dataset:
         """It must be implement to build dataset for training.
 
         Args:
@@ -133,7 +133,7 @@ class Runner(metaclass=ABCMeta):
         pass
 
     @staticmethod
-    def build_val_dataset(cfg: Dict):
+    def build_val_dataset(cfg: Config):
         """It can be implement to build dataset for validation (not necessary).
 
         Args:
@@ -145,7 +145,7 @@ class Runner(metaclass=ABCMeta):
 
         raise NotImplementedError()
 
-    def build_train_data_loader(self, cfg: Dict) -> DataLoader:
+    def build_train_data_loader(self, cfg: Config) -> DataLoader:
         """Build train dataset and dataloader.
         Build dataset by calling ```self.build_train_dataset```,
         build dataloader by calling ```build_data_loader``` or
@@ -161,11 +161,11 @@ class Runner(metaclass=ABCMeta):
         self.logger.info('Building training data loader.')
         dataset = self.build_train_dataset(cfg)
         if torch.distributed.is_initialized():
-            return build_data_loader_ddp(dataset, cfg['TRAIN']['DATA'])
+            return build_data_loader_ddp(dataset, cfg['TRAIN.DATA'])
         else:
-            return build_data_loader(dataset, cfg['TRAIN']['DATA'])
+            return build_data_loader(dataset, cfg['TRAIN.DATA'])
 
-    def build_val_data_loader(self, cfg: Dict) -> DataLoader:
+    def build_val_data_loader(self, cfg: Config) -> DataLoader:
         """Build val dataset and dataloader.
         Build dataset by calling ```self.build_train_dataset```,
         build dataloader by calling ```build_data_loader```.
@@ -179,9 +179,9 @@ class Runner(metaclass=ABCMeta):
 
         self.logger.info('Building val data loader.')
         dataset = self.build_val_dataset(cfg)
-        return build_data_loader(dataset, cfg['VAL']['DATA'])
+        return build_data_loader(dataset, cfg['VAL.DATA'])
 
-    def build_model(self, cfg: Dict) -> nn.Module:
+    def build_model(self, cfg: Config) -> nn.Module:
         """Build model.
 
         Initialize model by calling ```self.define_model```,
@@ -203,7 +203,7 @@ class Runner(metaclass=ABCMeta):
             model = DDP(
                 model,
                 device_ids=[get_local_rank()],
-                find_unused_parameters=cfg['MODEL'].get('DDP_FIND_UNUSED_PARAMETERS', False)
+                find_unused_parameters=cfg.get('MODEL.DDP_FIND_UNUSED_PARAMETERS', False)
             )
         return model
 
@@ -310,7 +310,7 @@ class Runner(metaclass=ABCMeta):
         except (IndexError, OSError) as e:
             raise OSError('Ckpt file does not exist') from e
 
-    def train(self, cfg: Dict):
+    def train(self, cfg: Config):
         """Train model.
 
         Train process:
@@ -374,7 +374,7 @@ class Runner(metaclass=ABCMeta):
 
         self.on_training_end()
 
-    def init_training(self, cfg: Dict):
+    def init_training(self, cfg: Config):
         """Initialize training
 
         Args:
@@ -384,11 +384,11 @@ class Runner(metaclass=ABCMeta):
         self.logger.info('Initializing training.')
 
         # init training param
-        self.num_epochs = cfg['TRAIN']['NUM_EPOCHS']
+        self.num_epochs = cfg['TRAIN.NUM_EPOCHS']
         self.start_epoch = 0
-        self.ckpt_save_strategy = cfg['TRAIN'].get('CKPT_SAVE_STRATEGY')
+        self.ckpt_save_strategy = cfg.get('TRAIN.CKPT_SAVE_STRATEGY')
         self.best_metrics = {}
-        self.clip_grad_param = cfg['TRAIN'].get('CLIP_GRAD_PARAM')
+        self.clip_grad_param = cfg.get('TRAIN.CLIP_GRAD_PARAM')
         if self.clip_grad_param is not None:
             self.logger.info('Set clip grad, param: {}'.format(self.clip_grad_param))
 
@@ -397,18 +397,18 @@ class Runner(metaclass=ABCMeta):
         self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
 
         # create optim
-        self.optim = build_optim(cfg['TRAIN']['OPTIM'], self.model)
+        self.optim = build_optim(cfg['TRAIN.OPTIM'], self.model)
         self.logger.info('Set optim: {}'.format(self.optim))
 
         # create lr_scheduler
-        if hasattr(cfg['TRAIN'], 'LR_SCHEDULER'):
-            self.scheduler = build_lr_scheduler(cfg['TRAIN']['LR_SCHEDULER'], self.optim)
+        if cfg.has('TRAIN.LR_SCHEDULER'):
+            self.scheduler = build_lr_scheduler(cfg['TRAIN.LR_SCHEDULER'], self.optim)
             self.logger.info('Set lr_scheduler: {}'.format(self.scheduler))
             self.register_epoch_meter('lr', 'train', '{:.2e}')
 
         # fine tune
-        if hasattr(cfg['TRAIN'], 'FINETUNE_FROM'):
-            self.load_model(cfg['TRAIN']['FINETUNE_FROM'], cfg['TRAIN'].get('FINETUNE_STRICT_LOAD', True))
+        if cfg.has('TRAIN.FINETUNE_FROM'):
+            self.load_model(cfg['TRAIN.FINETUNE_FROM'], cfg.get('TRAIN.FINETUNE_STRICT_LOAD', True))
             self.logger.info('Start fine tuning')
 
         # resume
@@ -422,7 +422,7 @@ class Runner(metaclass=ABCMeta):
             )
 
         # init validation
-        if hasattr(cfg, 'VAL'):
+        if cfg.has('VAL'):
             self.init_validation(cfg)
 
     def on_epoch_start(self, epoch: int):
@@ -503,7 +503,7 @@ class Runner(metaclass=ABCMeta):
 
     @torch.no_grad()
     @master_only
-    def validate(self, cfg: Dict = None, train_epoch: Optional[int] = None):
+    def validate(self, cfg: Config = None, train_epoch: Optional[int] = None):
         """Validate model.
 
         Args:
@@ -540,7 +540,7 @@ class Runner(metaclass=ABCMeta):
         self.on_validating_end(train_epoch)
 
     @master_only
-    def init_validation(self, cfg: Dict):
+    def init_validation(self, cfg: Config):
         """Initialize validation
 
         Args:
@@ -548,7 +548,7 @@ class Runner(metaclass=ABCMeta):
         """
 
         self.logger.info('Initializing validation.')
-        self.val_interval = cfg['VAL'].get('INTERVAL', 1)
+        self.val_interval = cfg.get('VAL.INTERVAL', 1)
         self.val_data_loader = self.build_val_data_loader(cfg)
         self.register_epoch_meter('val_time', 'val', '{:.2f} (s)', plt=False)
 
