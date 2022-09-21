@@ -1,4 +1,6 @@
 # Modified from: https://github.com/makinacorpus/easydict/blob/master/easydict/__init__.py
+from typing import overload
+
 
 class Config(dict):
     """
@@ -122,7 +124,7 @@ class Config(dict):
             setattr(self, k, v)
         # Class attributes
         for k in self.__class__.__dict__:
-            if not (k.startswith('__') and k.endswith('__')) and not k in ('get', 'update', 'pop'):
+            if not (k.startswith('__') and k.endswith('__')) and not k in ('has', 'get', 'update', 'pop'):
                 setattr(self, k, getattr(self, k))
 
     def __setattr__(self, name, value):
@@ -140,7 +142,7 @@ class Config(dict):
     __setitem__ = __setattr__
 
     def __getitem__(self, key):
-        # Support `cfg[AA.BB.CC]`
+        # Support `cfg['AA.BB.CC']`
         if isinstance(key, str):
             keys = key.split('.')
         else:
@@ -154,7 +156,11 @@ class Config(dict):
     def has(self, key):
         return self.get(key) is not None
 
+    @overload
+    def get(self, key): ...
+
     def get(self, key, default=None):
+        # Support `cfg.get('AA.BB.CC')` and `cfg.get('AA.BB.CC', default_value)`
         try:
             return self[key]
         except KeyError:
