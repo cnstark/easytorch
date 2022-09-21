@@ -1,18 +1,18 @@
 import os
-from easydict import EasyDict
+from easytorch import Config
 
 from mnist_runner import MNISTRunner
 
-CFG = EasyDict()
+CFG = Config()
 
 CFG.DESC = 'mnist'
 CFG.RUNNER = MNISTRunner
 CFG.GPU_NUM = 0
 
-CFG.MODEL = EasyDict()
+CFG.MODEL = Config()
 CFG.MODEL.NAME = 'conv_net'
 
-CFG.TRAIN = EasyDict()
+CFG.TRAIN = Config()
 
 CFG.TRAIN.NUM_EPOCHS = 30
 CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
@@ -21,21 +21,21 @@ CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
 )
 CFG.TRAIN.CKPT_SAVE_STRATEGY = None
 
-CFG.TRAIN.OPTIM = EasyDict()
+CFG.TRAIN.OPTIM = Config()
 CFG.TRAIN.OPTIM.TYPE = 'SGD'
 CFG.TRAIN.OPTIM.PARAM = {
     'lr': 0.002,
     'momentum': 0.1,
 }
 
-CFG.TRAIN.DATA = EasyDict()
+CFG.TRAIN.DATA = Config()
 CFG.TRAIN.DATA.BATCH_SIZE = 4
 CFG.TRAIN.DATA.DIR = 'mnist_data'
 CFG.TRAIN.DATA.SHUFFLE = True
 
-CFG.VAL = EasyDict()
+CFG.VAL = Config()
 
 CFG.VAL.INTERVAL = 1
 
-CFG.VAL.DATA = EasyDict()
+CFG.VAL.DATA = Config()
 CFG.VAL.DATA.DIR = 'mnist_data'

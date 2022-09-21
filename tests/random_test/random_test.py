@@ -1,13 +1,12 @@
 import random
 from typing import Dict, Tuple, Union
 
-from easydict import EasyDict
 import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import Dataset
 
-from easytorch import Runner, get_rank, launch_training
+from easytorch import Config, Runner, get_rank, launch_training
 
 
 class FakeDataset(Dataset):
@@ -48,34 +47,34 @@ class DDPTestRunner(Runner):
 
 
 def build_cfg():
-    CFG = EasyDict()
+    CFG = Config()
 
     CFG.DESC = 'ddp test'
     CFG.RUNNER = DDPTestRunner
     CFG.GPU_NUM = 8
 
-    CFG.ENV = EasyDict()
+    CFG.ENV = Config()
     CFG.ENV.TF32 = False
     CFG.ENV.SEED = 6
 
-    CFG.MODEL = EasyDict()
+    CFG.MODEL = Config()
     CFG.MODEL.NAME = 'conv'
 
-    CFG.TRAIN = EasyDict()
+    CFG.TRAIN = Config()
 
     CFG.TRAIN.NUM_EPOCHS = 5
     CFG.TRAIN.CKPT_SAVE_DIR = 'checkpoints'
 
     CFG.TRAIN.CKPT_SAVE_STRATEGY = None
 
-    CFG.TRAIN.OPTIM = EasyDict()
+    CFG.TRAIN.OPTIM = Config()
     CFG.TRAIN.OPTIM.TYPE = 'SGD'
     CFG.TRAIN.OPTIM.PARAM = {
         'lr': 0.002,
         'momentum': 0.1,
     }
 
-    CFG.TRAIN.DATA = EasyDict()
+    CFG.TRAIN.DATA = Config()
     CFG.TRAIN.DATA.NUM = 100
     CFG.TRAIN.DATA.MIN = 0
     CFG.TRAIN.DATA.MAX = 100

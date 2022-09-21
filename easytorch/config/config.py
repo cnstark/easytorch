@@ -6,7 +6,7 @@ class Config(dict):
     """
     Get attributes
 
-    >>> d = EasyDict({'foo':3})
+    >>> d = Config({'foo':3})
     >>> d['foo']
     3
     >>> d.foo
@@ -14,31 +14,43 @@ class Config(dict):
     >>> d.bar
     Traceback (most recent call last):
     ...
-    AttributeError: 'EasyDict' object has no attribute 'bar'
+    AttributeError: 'Config' object has no attribute 'bar'
 
     Works recursively
 
-    >>> d = EasyDict({'foo':3, 'bar':{'x':1, 'y':2}})
+    >>> d = Config({'foo':3, 'bar':{'x':1, 'y':2}})
     >>> isinstance(d.bar, dict)
     True
     >>> d.bar.x
     1
+    >>> d['bar.x']
+    1
+    >>> d.get('bar.x')
+    1
+    >>> d.get('bar.z')
+    None
+    >>> d.get('bar.z', 3)
+    3
+    >>> d.has('bar.x)
+    True
+    >>> d.has('bar.z)
+    False
 
     Bullet-proof
 
-    >>> EasyDict({})
+    >>> Config({})
     {}
-    >>> EasyDict(d={})
+    >>> Config(d={})
     {}
-    >>> EasyDict(None)
+    >>> Config(None)
     {}
     >>> d = {'a': 1}
-    >>> EasyDict(**d)
+    >>> Config(**d)
     {'a': 1}
 
     Set attributes
 
-    >>> d = EasyDict()
+    >>> d = Config()
     >>> d.foo = 3
     >>> d.foo
     3
@@ -54,7 +66,7 @@ class Config(dict):
 
     Values extraction
 
-    >>> d = EasyDict({'foo':0, 'bar':[{'x':1, 'y':2}, {'x':3, 'y':4}]})
+    >>> d = Config({'foo':0, 'bar':[{'x':1, 'y':2}, {'x':3, 'y':4}]})
     >>> isinstance(d.bar, list)
     True
     >>> from operator import attrgetter
@@ -62,10 +74,10 @@ class Config(dict):
     [1, 3]
     >>> map(attrgetter('y'), d.bar)
     [2, 4]
-    >>> d = EasyDict()
+    >>> d = Config()
     >>> d.keys()
     []
-    >>> d = EasyDict(foo=3, bar=dict(x=1, y=2))
+    >>> d = Config(foo=3, bar=dict(x=1, y=2))
     >>> d.foo
     3
     >>> d.bar.x
@@ -73,13 +85,13 @@ class Config(dict):
 
     Still like a dict though
 
-    >>> o = EasyDict({'clean':True})
+    >>> o = Config({'clean':True})
     >>> o.items()
     [('clean', True)]
 
     And like a class
 
-    >>> class Flower(EasyDict):
+    >>> class Flower(Config):
     ...     power = 1
     ...
     >>> f = Flower()
@@ -94,8 +106,8 @@ class Config(dict):
     ['height', 'power']
 
     update and pop items
-    >>> d = EasyDict(a=1, b='2')
-    >>> e = EasyDict(c=3.0, a=9.0)
+    >>> d = Config(a=1, b='2')
+    >>> e = Config(c=3.0, a=9.0)
     >>> d.update(e)
     >>> d.c
     3.0
@@ -111,7 +123,7 @@ class Config(dict):
     >>> d.a
     Traceback (most recent call last):
     ...
-    AttributeError: 'EasyDict' object has no attribute 'a'
+    AttributeError: 'Config' object has no attribute 'a'
     """
 
     # pylint: disable=super-init-not-called
