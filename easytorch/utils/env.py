@@ -102,11 +102,11 @@ def set_env(env_cfg: Dict):
 
     env config template:
     ```
-    CFG.ENV = EasyDict()
+    CFG.ENV = Config()
     CFG.ENV.TF32 = False
     CFG.ENV.SEED = 42
     CFG.ENV.DETERMINISTIC = True
-    CFG.ENV.CUDNN = EasyDict()
+    CFG.ENV.CUDNN = Config()
     CFG.ENV.CUDNN.ENABLED = False
     CFG.ENV.CUDNN.BENCHMARK = False
     CFG.ENV.CUDNN.DETERMINISTIC = True

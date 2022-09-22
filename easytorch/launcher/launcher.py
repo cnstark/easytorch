@@ -1,31 +1,9 @@
-import os
 import traceback
 from typing import Callable, Dict, Union, Tuple
 
-from ..config import import_config, save_config_str, copy_config_file, convert_config, get_ckpt_save_dir
+from ..config import init_cfg
 from ..utils import set_gpus, get_logger
 from .dist_wrap import dist_wrap
-
-
-def init_cfg(cfg: Union[Dict, str], save: bool = False):
-    if isinstance(cfg, str):
-        cfg_path = cfg
-        cfg = import_config(cfg, verbose=save)
-    else:
-        cfg_path = None
-
-    # convert ckpt save dir
-    convert_config(cfg)
-
-    # save config
-    ckpt_save_dir = get_ckpt_save_dir(cfg)
-    if save and not os.path.isdir(ckpt_save_dir):
-        os.makedirs(ckpt_save_dir)
-        save_config_str(cfg, os.path.join(ckpt_save_dir, 'cfg.txt'))
-        if cfg_path is not None:
-            copy_config_file(cfg_path, ckpt_save_dir)
-
-    return cfg
 
 
 def training_func(cfg: Dict):

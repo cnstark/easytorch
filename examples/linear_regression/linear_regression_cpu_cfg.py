@@ -1,18 +1,18 @@
 import os
-from easydict import EasyDict
+from easytorch import Config
 
 from linear_regression_runner import LinearRegressionRunner
 
-CFG = EasyDict()
+CFG = Config()
 
 CFG.DESC = 'linear_regression'
 CFG.RUNNER = LinearRegressionRunner
 CFG.GPU_NUM = 0
 
-CFG.MODEL = EasyDict()
+CFG.MODEL = Config()
 CFG.MODEL.NAME = 'linear'
 
-CFG.TRAIN = EasyDict()
+CFG.TRAIN = Config()
 
 CFG.TRAIN.NUM_EPOCHS = 10000
 CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
@@ -21,14 +21,14 @@ CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
 )
 CFG.TRAIN.CKPT_SAVE_STRATEGY = None
 
-CFG.TRAIN.OPTIM = EasyDict()
+CFG.TRAIN.OPTIM = Config()
 CFG.TRAIN.OPTIM.TYPE = 'SGD'
 CFG.TRAIN.OPTIM.PARAM = {
     'lr': 0.001,
     'momentum': 0.1,
 }
 
-CFG.TRAIN.DATA = EasyDict()
+CFG.TRAIN.DATA = Config()
 CFG.TRAIN.DATA.BATCH_SIZE = 10
 CFG.TRAIN.DATA.K = 10
 CFG.TRAIN.DATA.B = 6

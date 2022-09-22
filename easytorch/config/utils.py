@@ -1,83 +1,11 @@
-"""Everything is based on config.
-
-`Config` is the set of all configurations. `Config` is is implemented by `dict`, We recommend using `EasyDict`.
-
-Look at the following example:
-
-cfg.py
-
-```python
-import os
-from easydict import EasyDict
-
-from my_runner import MyRunner
-
-CFG = EasyDict()
-
-CFG.DESC = 'my net'  # customized description
-CFG.RUNNER = MyRunner
-CFG.GPU_NUM = 1
-
-CFG.MODEL = EasyDict()
-CFG.MODEL.NAME = 'my_net'
-
-CFG.TRAIN = EasyDict()
-
-CFG.TRAIN.NUM_EPOCHS = 100
-CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
-    'checkpoints',
-    '_'.join([CFG.MODEL.NAME, str(CFG.TRAIN.NUM_EPOCHS)])
-)
-CFG.TRAIN.CKPT_SAVE_STRATEGY = None
-
-CFG.TRAIN.OPTIM = EasyDict()
-CFG.TRAIN.OPTIM.TYPE = 'SGD'
-CFG.TRAIN.OPTIM.PARAM = {
-    'lr': 0.002,
-    'momentum': 0.1,
-}
-
-CFG.TRAIN.DATA = EasyDict()
-CFG.TRAIN.DATA.BATCH_SIZE = 4
-CFG.TRAIN.DATA.DIR = './my_data'
-CFG.TRAIN.DATA.SHUFFLE = True
-CFG.TRAIN.DATA.PIN_MEMORY = True
-CFG.TRAIN.DATA.PREFETCH = True
-
-CFG.VAL = EasyDict()
-
-CFG.VAL.INTERVAL = 1
-
-CFG.VAL.DATA = EasyDict()
-CFG.VAL.DATA.DIR = 'mnist_data'
-
-CFG._TRAINING_INDEPENDENT` = [
-    'OTHER_CONFIG'
-]
-
-```
-
-All configurations consists of two parts:
-    1. Training dependent configuration: changing this will affect the training results.
-    2. Training independent configuration: changing this will not affect the training results.
-
-Notes:
-    All training dependent configurations will be calculated MD5,
-    this MD5 value will be the sub directory name of checkpoint save directory.
-    If the MD5 value is `098f6bcd4621d373cade4e832627b4f6`,
-    real checkpoint save directory is `{CFG.TRAIN.CKPT_SAVE_DIR}/098f6bcd4621d373cade4e832627b4f6`
-
-Notes:
-    Each configuration default is training dependent,
-    except the key is in `TRAINING_INDEPENDENT_KEYS` or `CFG._TRAINING_INDEPENDENT`
-"""
-
 import os
 import shutil
 import types
 import copy
 import hashlib
 from typing import Dict, Set, List, Union
+
+from .config import Config
 
 __all__ = [
     'config_str', 'config_md5', 'save_config_str', 'copy_config_file',
@@ -249,15 +177,18 @@ def import_config(path: str, verbose: bool = True) -> Dict:
     return cfg
 
 
-def convert_config(cfg: Dict):
-    """Add MD5 to cfg.
+def convert_config(cfg: Dict) -> Config:
+    """Convert cfg to `Config`; add MD5 to cfg.
 
     Args:
         cfg (Dict): config.
     """
 
+    if not isinstance(cfg, Config):
+        cfg = Config(cfg)
     if cfg.get('MD5') is None:
         cfg['MD5'] = config_md5(cfg)
+    return cfg
 
 
 def get_ckpt_save_dir(cfg: Dict) -> str:
@@ -271,3 +202,24 @@ def get_ckpt_save_dir(cfg: Dict) -> str:
     """
 
     return os.path.join(cfg['TRAIN']['CKPT_SAVE_DIR'], cfg['MD5'])
+
+
+def init_cfg(cfg: Union[Dict, str], save: bool = False):
+    if isinstance(cfg, str):
+        cfg_path = cfg
+        cfg = import_config(cfg, verbose=save)
+    else:
+        cfg_path = None
+
+    # convert ckpt save dir
+    cfg = convert_config(cfg)
+
+    # save config
+    ckpt_save_dir = get_ckpt_save_dir(cfg)
+    if save and not os.path.isdir(ckpt_save_dir):
+        os.makedirs(ckpt_save_dir)
+        save_config_str(cfg, os.path.join(ckpt_save_dir, 'cfg.txt'))
+        if cfg_path is not None:
+            copy_config_file(cfg_path, ckpt_save_dir)
+
+    return cfg
