@@ -31,9 +31,9 @@ class Config(dict):
     None
     >>> d.get('bar.z', 3)
     3
-    >>> d.has('bar.x)
+    >>> d.has('bar.x')
     True
-    >>> d.has('bar.z)
+    >>> d.has('bar.z')
     False
 
     Bullet-proof
