@@ -83,7 +83,9 @@ def setup_determinacy(seed: int, deterministic: bool = False, cudnn_enabled: boo
     set_device_manual_seed(seed)
 
     if deterministic:
-        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+        if get_device_type() == 'gpu':
+            os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+
         if torch.__version__ < '1.7.0':
             pass
         elif torch.__version__ < '1.8.0':
@@ -91,15 +93,17 @@ def setup_determinacy(seed: int, deterministic: bool = False, cudnn_enabled: boo
         else:
             torch.use_deterministic_algorithms(True)
         logger.info('Use deterministic algorithms.')
-    if not cudnn_enabled:
-        torch.backends.cudnn.enabled = False
-        logger.info('Unset cudnn enabled.')
-    if not cudnn_benchmark:
-        torch.backends.cudnn.benchmark = False
-        logger.info('Unset cudnn benchmark.')
-    if cudnn_deterministic:
-        torch.backends.cudnn.deterministic = True
-        logger.info('Set cudnn deterministic.')
+
+    if get_device_type() == 'gpu':
+        if not cudnn_enabled:
+            torch.backends.cudnn.enabled = False
+            logger.info('Unset cudnn enabled.')
+        if not cudnn_benchmark:
+            torch.backends.cudnn.benchmark = False
+            logger.info('Unset cudnn benchmark.')
+        if cudnn_deterministic:
+            torch.backends.cudnn.deterministic = True
+            logger.info('Set cudnn deterministic.')
 
 
 def set_env(env_cfg: Dict):
@@ -127,12 +131,11 @@ def set_env(env_cfg: Dict):
     # determinacy
     seed = env_cfg.get('SEED')
     if seed is not None:
-        cudnn = env_cfg.get('CUDNN', {})
         # each rank has different seed in distributed mode
         setup_determinacy(
             seed + get_rank(),
             env_cfg.get('DETERMINISTIC', False),
-            cudnn.get('ENABLED', True),
-            cudnn.get('BENCHMARK', True),
-            cudnn.get('DETERMINISTIC', False)
+            env_cfg.get('CUDNN.ENABLED', True),
+            env_cfg.get('CUDNN.BENCHMARK', True),
+            env_cfg.get('CUDNN.DETERMINISTIC', False)
         )
