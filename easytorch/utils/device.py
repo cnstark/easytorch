@@ -3,7 +3,15 @@ from typing import Union
 import torch
 from torch import nn
 
+__all__ = [
+    'get_device_type', 'set_device_type', 'get_device_count', 'set_device', 'to_device', 'set_device_manual_seed'
+]
+
 _DEVICE_TYPE = 'gpu'
+
+
+def get_device_type() -> str:
+    return _DEVICE_TYPE
 
 
 def set_device_type(device_type: str):
@@ -11,10 +19,6 @@ def set_device_type(device_type: str):
     if device_type not in ['gpu', 'mlu', 'cpu']:
         raise ValueError('Unknown device type!')
     _DEVICE_TYPE = device_type
-
-
-def get_device_type() -> str:
-    return _DEVICE_TYPE
 
 
 def get_device_count() -> int:

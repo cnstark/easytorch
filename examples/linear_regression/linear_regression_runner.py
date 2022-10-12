@@ -1,6 +1,6 @@
 from torch import nn
 
-from easytorch import Runner
+from easytorch import Runner, to_device
 
 from dataset import LinearDataset
 
@@ -21,7 +21,7 @@ class LinearRegressionRunner(Runner):
         super().init_training(cfg)
 
         self.loss = nn.MSELoss()
-        self.loss = self.to_running_device(self.loss)
+        self.loss = to_device(self.loss)
 
         self.register_epoch_meter('train_loss', 'train', '{:.2f}')
 
@@ -68,8 +68,8 @@ class LinearRegressionRunner(Runner):
         """
 
         x, y = data
-        x = self.to_running_device(x)
-        y = self.to_running_device(y)
+        x = to_device(x)
+        y = to_device(y)
 
         output = self.model(x)
         loss = self.loss(output, y)
