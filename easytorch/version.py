@@ -1,2 +1,2 @@
-__version__ = '1.2.12'
+__version__ = '1.3'
 __all__ = ['__version__']

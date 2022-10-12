@@ -6,7 +6,10 @@ from typing import Dict, List, Tuple, Union
 
 import torch
 
-from ..utils import get_logger, get_local_rank
+from ..utils import get_logger
+from ..utils.device import get_device_type
+from ..utils.dist import get_local_rank
+
 
 DEFAULT_LOGGER = get_logger('easytorch-checkpoint')
 
@@ -28,8 +31,7 @@ def get_last_ckpt_path(ckpt_save_dir: str, name_pattern: str = r'^.+_[\d]*.pt$')
     return os.path.join(ckpt_save_dir, ckpt_list[-1])
 
 
-def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True,
-              logger: Logger = DEFAULT_LOGGER) -> Dict:
+def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = DEFAULT_LOGGER) -> Dict:
     """Load checkpoint
     if param `ckpt_path` is None, load the last checkpoint in `ckpt_save_dir`,
     else load checkpoint from `ckpt_path`
@@ -37,7 +39,6 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True,
     Args:
         ckpt_save_dir (str): checkpoint save directory
         ckpt_path (str): checkpoint path, default is None
-        use_gpu (bool): set to ``True`` to load checkpoint to GPU
         logger (Logger): logger, default is Logger('easytorch')
 
     Returns:
@@ -46,10 +47,12 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, use_gpu: bool = True,
 
     if ckpt_path is None:
         ckpt_path = get_last_ckpt_path(ckpt_save_dir)
-    if use_gpu:
-        map_location = 'cuda:{}'.format(get_local_rank())
-    else:
-        map_location = 'cpu'
+    map_location = {
+        'gpu': 'cuda:{}'.format(get_local_rank()),
+        'mlu': None,
+        'cpu': 'cpu'
+    }[get_device_type()]
+
     logger.info('Loading Checkpoint from \'{}\''.format(ckpt_path))
     return torch.load(ckpt_path, map_location=map_location)
 

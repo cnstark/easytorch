@@ -88,4 +88,4 @@ def build_cfg():
 if __name__ == '__main__':
     cfg_ = build_cfg()
 
-    launch_training(cfg_, gpus='0,1,2,3,4,5,6,7,8')
+    launch_training(cfg_, devices='0,1,2,3,4,5,6,7,8')

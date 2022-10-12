@@ -2,7 +2,8 @@ import traceback
 from typing import Callable, Dict, Union, Tuple
 
 from ..config import init_cfg
-from ..utils import set_gpus, get_logger
+from ..utils import set_visible_devices, get_logger
+from ..utils.device import set_device_type
 from .dist_wrap import dist_wrap
 
 
@@ -34,7 +35,7 @@ def training_func(cfg: Dict):
         raise e
 
 
-def launch_training(cfg: Union[Dict, str], gpus: str = None, node_rank: int = 0):
+def launch_training(cfg: Union[Dict, str], devices: str = None, node_rank: int = 0):
     """Launch training process defined by `cfg`.
 
     Support distributed data parallel training when the number of available GPUs is greater than one.
@@ -48,7 +49,7 @@ def launch_training(cfg: Union[Dict, str], gpus: str = None, node_rank: int = 0)
 
     Args:
         cfg (Union[Dict, str]): Easytorch config.
-        gpus (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
+        devices (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
         node_rank (int): Rank of the current node.
     """
 
@@ -57,13 +58,27 @@ def launch_training(cfg: Union[Dict, str], gpus: str = None, node_rank: int = 0)
 
     cfg = init_cfg(cfg, node_rank == 0)
 
-    if cfg.get('GPU_NUM', 0) != 0:
-        set_gpus(gpus)
+    if cfg.get('DEVICE') is not None:
+        set_device_type(cfg['DEVICE'])
+        device_num = cfg.get('DEVICE_NUM', 0)
+    elif cfg.get('GPU_NUM', 0) != 0 or cfg.get('MLU_NUM', 0) != 0:
+        if cfg.get('GPU_NUM', 0) != 0 and cfg.get('MLU_NUM', 0) == 0:
+            set_device_type('gpu')
+            device_num = cfg.get('GPU_NUM', 0)
+        elif cfg.get('GPU_NUM', 0) == 0 and cfg.get('MLU_NUM', 0) != 0:
+            set_device_type('mlu')
+            device_num = cfg.get('MLU_NUM', 0)
+        else:
+            raise ValueError('At least one of `CFG.GPU_NUM` and `CFG.MLU_NUM` is 0.')
+        set_visible_devices(devices)
+    else:
+        set_device_type('cpu')
+        device_num = 0
 
     train_dist = dist_wrap(
         training_func,
         node_num=cfg.get('DIST_NODE_NUM', 1),
-        gpu_num=cfg.get('GPU_NUM', 0),
+        device_num=device_num,
         node_rank=node_rank,
         dist_backend=cfg.get('DIST_BACKEND'),
         init_method=cfg.get('DIST_INIT_METHOD')
@@ -71,7 +86,7 @@ def launch_training(cfg: Union[Dict, str], gpus: str = None, node_rank: int = 0)
     train_dist(cfg)
 
 
-def launch_runner(cfg: Union[Dict, str], fn: Callable, args: Tuple = (), gpus: str = None):
+def launch_runner(cfg: Union[Dict, str], fn: Callable, args: Tuple = (), device_type: str = 'gpu', devices: str = None):
     """Launch runner defined by `cfg`, and call `fn`.
 
     Args:
@@ -89,8 +104,10 @@ def launch_runner(cfg: Union[Dict, str], fn: Callable, args: Tuple = (), gpus: s
 
     cfg = init_cfg(cfg, True)
 
-    if cfg.get('GPU_NUM', 0) != 0:
-        set_gpus(gpus)
+    set_device_type(device_type)
+
+    if device_type != 'cpu':
+        set_visible_devices(devices)
 
     # init runner
     runner = cfg['RUNNER'](cfg)

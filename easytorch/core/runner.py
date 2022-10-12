@@ -18,6 +18,7 @@ from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
 from ..config import Config, get_ckpt_save_dir
 from ..utils import TimePredictor, get_logger, get_local_rank, is_master, master_only, set_env
+from ..utils.device import to_device
 
 
 class Runner(metaclass=ABCMeta):
@@ -32,7 +33,6 @@ class Runner(metaclass=ABCMeta):
         set_env(cfg.get('ENV', {}))
 
         # param
-        self.use_gpu = cfg.get('GPU_NUM', 0) != 0
         self.model_name = cfg['MODEL.NAME']
         self.ckpt_save_dir = get_ckpt_save_dir(cfg)
         self.logger.info('Set ckpt save dir: \'{}\''.format(self.ckpt_save_dir))
@@ -85,22 +85,6 @@ class Runner(metaclass=ABCMeta):
             self.logger = get_logger(logger_name, log_file_path, log_level)
         else:
             raise TypeError('At least one of logger and logger_name is not None')
-
-    def to_running_device(self, src: Union[torch.Tensor, nn.Module]) -> Union[torch.Tensor, nn.Module]:
-        """Move `src` to the running device. If `self.use_gpu` is ```True```,
-        the running device is GPU, else the running device is CPU.
-
-        Args:
-            src (Union[torch.Tensor, nn.Module]): source
-
-        Returns:
-            target (Union[torch.Tensor, nn.Module])
-        """
-
-        if self.use_gpu:
-            return src.cuda()
-        else:
-            return src.cpu()
 
     @staticmethod
     @abstractmethod
@@ -198,7 +182,7 @@ class Runner(metaclass=ABCMeta):
 
         self.logger.info('Building model.')
         model = self.define_model(cfg)
-        model = self.to_running_device(model)
+        model = to_device(model)
         if torch.distributed.is_initialized():
             model = DDP(
                 model,
@@ -273,7 +257,7 @@ class Runner(metaclass=ABCMeta):
         """
 
         try:
-            checkpoint_dict = load_ckpt(self.ckpt_save_dir, use_gpu=self.use_gpu, logger=self.logger)
+            checkpoint_dict = load_ckpt(self.ckpt_save_dir, logger=self.logger)
             if isinstance(self.model, DDP):
                 self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             else:
@@ -301,8 +285,7 @@ class Runner(metaclass=ABCMeta):
         """
 
         try:
-            checkpoint_dict = load_ckpt(self.ckpt_save_dir, ckpt_path=ckpt_path, use_gpu=self.use_gpu,
-                                        logger=self.logger)
+            checkpoint_dict = load_ckpt(self.ckpt_save_dir, ckpt_path=ckpt_path, logger=self.logger)
             if isinstance(self.model, DDP):
                 self.model.module.load_state_dict(checkpoint_dict['model_state_dict'], strict=strict)
             else:

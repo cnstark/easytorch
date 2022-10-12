@@ -7,24 +7,28 @@ import numpy as np
 
 from .logging import get_logger
 from .dist import get_rank
+from .device import get_device_type, set_device_manual_seed
 
 
-def set_gpus(gpus: str):
+def set_visible_devices(devices: str):
     """Set environment variable `CUDA_VISIBLE_DEVICES` to select GPU devices.
 
     Examples:
-        set_gpus('0,1,2,3')
+        set_devices('0,1,2,3')
 
     Args:
-        gpus (str): environment variable `CUDA_VISIBLE_DEVICES` value
+        devices (str): environment variable `CUDA_VISIBLE_DEVICES` value
     """
 
     logger = get_logger('easytorch-env')
-    if gpus is not None:
-        os.environ['CUDA_VISIBLE_DEVICES'] = gpus
-        logger.info('Use GPUs {}.'.format(gpus))
+    if devices is not None:
+        os.environ[{
+            'gpu': 'CUDA_VISIBLE_DEVICES',
+            'mlu': 'MLU_VISIBLE_DEVICES'
+        }[get_device_type()]] = devices
+        logger.info('Use devices {}.'.format(devices))
     else:
-        logger.info('Use all GPUs.')
+        logger.info('Use all devices.')
 
 
 def set_tf32_mode(tf32_mode: bool):
@@ -36,6 +40,9 @@ def set_tf32_mode(tf32_mode: bool):
     """
 
     logger = get_logger('easytorch-env')
+    if get_device_type() != 'gpu':
+        raise RuntimeError('Device {} does not support tf32.'.format(get_device_type()))
+
     if torch.__version__ >= '1.7.0':
         if tf32_mode:
             logger.info('Enable TF32 mode')
@@ -73,9 +80,7 @@ def setup_determinacy(seed: int, deterministic: bool = False, cudnn_enabled: boo
     random.seed(seed)
     np.random.seed(seed)
 
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    set_device_manual_seed(seed)
 
     if deterministic:
         os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
