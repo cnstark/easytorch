@@ -1,6 +1,7 @@
 from torch import nn
 
-from easytorch import Runner, to_device
+from easytorch import Runner
+from easytorch.device import to_device
 
 from dataset import LinearDataset
 

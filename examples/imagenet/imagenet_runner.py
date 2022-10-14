@@ -5,7 +5,8 @@ from torch import nn
 from torch.utils.data import Dataset
 from torchvision import models, datasets, transforms
 
-from easytorch import Runner, to_device
+from easytorch import Runner
+from easytorch.device import to_device
 
 
 def accuracy(output, target, topk=(1,)):

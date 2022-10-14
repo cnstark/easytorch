@@ -4,7 +4,8 @@ import torch
 from torch import nn
 import torchvision
 
-from easytorch import Runner, to_device
+from easytorch import Runner
+from easytorch.device import to_device
 
 from conv_net import ConvNet
 
