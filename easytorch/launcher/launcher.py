@@ -3,7 +3,7 @@ from typing import Callable, Dict, Union, Tuple
 
 from ..config import init_cfg
 from ..utils import set_visible_devices, get_logger
-from ..utils.device import set_device_type
+from ..device import set_device_type
 from .dist_wrap import dist_wrap
 
 

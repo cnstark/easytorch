@@ -18,7 +18,7 @@ from .data_loader import build_data_loader, build_data_loader_ddp
 from .optimizer_builder import build_optim, build_lr_scheduler
 from ..config import Config, get_ckpt_save_dir
 from ..utils import TimePredictor, get_logger, get_local_rank, is_master, master_only, set_env
-from ..utils.device import to_device
+from ..device import to_device
 
 
 class Runner(metaclass=ABCMeta):

@@ -7,7 +7,7 @@ import numpy as np
 
 from .logging import get_logger
 from .dist import get_rank
-from .device import get_device_type, set_device_manual_seed
+from ..device import get_device_type, set_device_manual_seed
 
 
 def set_visible_devices(devices: str):

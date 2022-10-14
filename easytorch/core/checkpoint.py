@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple, Union
 import torch
 
 from ..utils import get_logger
-from ..utils.device import get_device_type
+from ..device import get_device_type
 from ..utils.dist import get_local_rank
 
 

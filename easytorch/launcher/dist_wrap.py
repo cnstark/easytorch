@@ -5,7 +5,7 @@ from typing import Callable, Dict, Union, Any, Optional
 import torch
 
 from ..utils import get_logger
-from ..utils.device import get_device_type, set_device_type, get_device_count, set_device
+from ..device import get_device_type, set_device_type, get_device_count, set_device
 
 
 def dist_func(local_rank: int, dist_params: Dict[str, Any], func: Callable, *args):

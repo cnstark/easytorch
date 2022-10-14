@@ -2,7 +2,7 @@ import functools
 
 import torch
 
-from .device import get_device_count
+from ..device import get_device_count
 
 # default master rank
 MASTER_RANK = 0
