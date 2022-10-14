@@ -6,9 +6,8 @@ from typing import Dict, List, Tuple, Union
 
 import torch
 
-from ..utils import get_logger
+from ..utils import get_logger, get_local_rank
 from ..device import get_device_type
-from ..utils.dist import get_local_rank
 
 
 DEFAULT_LOGGER = get_logger('easytorch-checkpoint')
