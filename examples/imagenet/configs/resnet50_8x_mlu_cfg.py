@@ -1,19 +1,19 @@
 import os
-from easydict import EasyDict
+from easytorch import Config
 
 from imagenet_runner import ImagenetRunner
 
-CFG = EasyDict()
+CFG = Config()
 
 CFG.DESC = 'imagenet resnet50'
 CFG.RUNNER = ImagenetRunner
 CFG.MLU_NUM = 8
 CFG.DIST_BACKEND = 'cncl'
 
-CFG.MODEL = EasyDict()
+CFG.MODEL = Config()
 CFG.MODEL.NAME = 'resnet50'
 
-CFG.TRAIN = EasyDict()
+CFG.TRAIN = Config()
 
 CFG.TRAIN.NUM_EPOCHS = 90
 CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
@@ -22,7 +22,7 @@ CFG.TRAIN.CKPT_SAVE_DIR = os.path.join(
 )
 CFG.TRAIN.CKPT_SAVE_STRATEGY = None
 
-CFG.TRAIN.OPTIM = EasyDict()
+CFG.TRAIN.OPTIM = Config()
 CFG.TRAIN.OPTIM.TYPE = 'SGD'
 CFG.TRAIN.OPTIM.PARAM = {
     'lr': 0.1,
@@ -30,7 +30,7 @@ CFG.TRAIN.OPTIM.PARAM = {
     'weight_decay': 1e-4
 }
 
-CFG.TRAIN.LR_SCHEDULER = EasyDict()
+CFG.TRAIN.LR_SCHEDULER = Config()
 CFG.TRAIN.LR_SCHEDULER.TYPE = 'StepLR'
 CFG.TRAIN.LR_SCHEDULER.PARAM = {
     'step_size': 30,
@@ -39,7 +39,7 @@ CFG.TRAIN.LR_SCHEDULER.PARAM = {
 
 IMAGENET_PATH = 'datasets/imagenet/jpegs'
 
-CFG.TRAIN.DATA = EasyDict()
+CFG.TRAIN.DATA = Config()
 CFG.TRAIN.DATA.BATCH_SIZE = 32
 CFG.TRAIN.DATA.NUM_WORKERS = 4
 CFG.TRAIN.DATA.SHUFFLE = True
@@ -51,11 +51,11 @@ CFG.TRAIN.DATA.NORMALIZE = {
     'std': [0.229, 0.224, 0.225]
 }
 
-CFG.VAL = EasyDict()
+CFG.VAL = Config()
 
 CFG.VAL.INTERVAL = 1
 
-CFG.VAL.DATA = EasyDict()
+CFG.VAL.DATA = Config()
 CFG.VAL.DATA.BATCH_SIZE = 32
 CFG.VAL.DATA.DIR = os.path.join(IMAGENET_PATH, 'val')
 CFG.VAL.DATA.CROP_SIZE = 224

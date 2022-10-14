@@ -28,6 +28,8 @@ def dist_func(local_rank: int, dist_params: Dict[str, Any], func: Callable, *arg
         )
     )
 
+    set_device_type(dist_params['device_type'])
+
     torch.distributed.init_process_group(
         backend=dist_params['dist_backend'],
         init_method=dist_params['init_method'],
@@ -35,7 +37,6 @@ def dist_func(local_rank: int, dist_params: Dict[str, Any], func: Callable, *arg
         world_size=dist_params['word_size']
     )
 
-    set_device_type(dist_params['device_type'])
     set_device(local_rank)
 
     args, kwargs = args
@@ -95,9 +96,8 @@ def dist_wrap(func: Callable,
             raise ValueError('The node_rank must be less than dist_node_num!')
 
         if device_num != get_device_count():
-            raise RuntimeError('Device num not match, cfg.DEVICE_NUM = {:d}, but torch.cuda.device_count() = {:d}'.format(
-                device_num, get_device_count()
-            ))
+            raise RuntimeError('Device num not match, cfg.DEVICE_NUM = {:d}, ' \
+                'but torch.cuda.device_count() = {:d}'.format(device_num, get_device_count()))
 
         if word_size == 1:
             return func

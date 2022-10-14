@@ -18,6 +18,8 @@ def set_device_type(device_type: str):
     global _DEVICE_TYPE
     if device_type not in ['gpu', 'mlu', 'cpu']:
         raise ValueError('Unknown device type!')
+    if device_type == 'mlu':
+        import torch_mlu
     _DEVICE_TYPE = device_type
 
 

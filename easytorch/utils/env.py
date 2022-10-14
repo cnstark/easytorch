@@ -40,20 +40,21 @@ def set_tf32_mode(tf32_mode: bool):
     """
 
     logger = get_logger('easytorch-env')
-    if get_device_type() != 'gpu':
-        raise RuntimeError('Device {} does not support tf32.'.format(get_device_type()))
-
-    if torch.__version__ >= '1.7.0':
-        if tf32_mode:
-            logger.info('Enable TF32 mode')
+    if get_device_type() == 'gpu':
+        if torch.__version__ >= '1.7.0':
+            if tf32_mode:
+                logger.info('Enable TF32 mode')
+            else:
+                # disable tf32 mode on Ampere gpu
+                torch.backends.cuda.matmul.allow_tf32 = False
+                torch.backends.cudnn.allow_tf32 = False
+                logger.info('Disable TF32 mode')
         else:
-            # disable tf32 mode on Ampere gpu
-            torch.backends.cuda.matmul.allow_tf32 = False
-            torch.backends.cudnn.allow_tf32 = False
-            logger.info('Disable TF32 mode')
+            if tf32_mode:
+                raise RuntimeError('Torch version {} does not support tf32'.format(torch.__version__))
     else:
         if tf32_mode:
-            raise RuntimeError('Torch version {} does not support tf32'.format(torch.__version__))
+            raise RuntimeError('Device {} does not support tf32.'.format(get_device_type()))
 
 
 def setup_determinacy(seed: int, deterministic: bool = False, cudnn_enabled: bool = True,
