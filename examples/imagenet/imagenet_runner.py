@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from torchvision import models, datasets, transforms
 
 from easytorch import Runner
+from easytorch.device import to_device
 
 
 def accuracy(output, target, topk=(1,)):
@@ -33,7 +34,7 @@ class ImagenetRunner(Runner):
         super().__init__(cfg)
 
         self.criterion = nn.CrossEntropyLoss()
-        self.criterion = self.to_running_device(self.criterion)
+        self.criterion = to_device(self.criterion)
 
     def init_training(self, cfg: Dict):
         super().init_training(cfg)
@@ -80,8 +81,8 @@ class ImagenetRunner(Runner):
     def train_iters(self, epoch: int, iter_index: int, data: Union[torch.Tensor, Tuple]) -> torch.Tensor:
         images, target = data
 
-        images = self.to_running_device(images)
-        target = self.to_running_device(target)
+        images = to_device(images)
+        target = to_device(target)
 
         output = self.model(images)
 
@@ -99,8 +100,8 @@ class ImagenetRunner(Runner):
     def val_iters(self, iter_index: int, data: Union[torch.Tensor, Tuple]):
         images, target = data
 
-        images = self.to_running_device(images)
-        target = self.to_running_device(target)
+        images = to_device(images)
+        target = to_device(target)
 
         output = self.model(images)
 

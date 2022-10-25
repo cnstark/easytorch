@@ -5,6 +5,7 @@ from torch import nn
 import torchvision
 
 from easytorch import Runner
+from easytorch.device import to_device
 
 from conv_net import ConvNet
 
@@ -25,7 +26,7 @@ class MNISTRunner(Runner):
         super().init_training(cfg)
 
         self.loss = nn.NLLLoss()
-        self.loss = self.to_running_device(self.loss)
+        self.loss = to_device(self.loss)
 
         self.register_epoch_meter('train_loss', 'train', '{:.2f}')
 
@@ -113,8 +114,8 @@ class MNISTRunner(Runner):
         """
 
         input_, target_ = data
-        input_ = self.to_running_device(input_)
-        target_ = self.to_running_device(target_)
+        input_ = to_device(input_)
+        target_ = to_device(target_)
 
         output = self.model(input_)
         loss = self.loss(output, target_)
@@ -130,8 +131,8 @@ class MNISTRunner(Runner):
         """
 
         input_, target_ = data
-        input_ = self.to_running_device(input_)
-        target_ = self.to_running_device(target_)
+        input_ = to_device(input_)
+        target_ = to_device(target_)
 
         output = self.model(input_)
         pred = output.data.max(1, keepdim=True)[1]

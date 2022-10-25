@@ -2,6 +2,7 @@ import functools
 
 import torch
 
+from ..device import get_device_count
 
 # default master rank
 MASTER_RANK = 0
@@ -30,7 +31,7 @@ def get_local_rank() -> int:
         local_rank (int)
     """
 
-    return get_rank() % torch.cuda.device_count() if torch.cuda.device_count() != 0 else 0
+    return get_rank() % get_device_count() if get_device_count() != 0 else 0
 
 
 def get_world_size() -> int:
