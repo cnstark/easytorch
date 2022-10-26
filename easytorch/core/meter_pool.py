@@ -59,6 +59,9 @@ class MeterPool:
                 when calling ```plt_meters```.
         """
 
+        if name in self._pool:
+            raise ValueError(f'Meter {name} already existed.')
+
         self._pool[name] = {
             'meter': AvgMeter(),
             'index': len(self._pool.keys()),
