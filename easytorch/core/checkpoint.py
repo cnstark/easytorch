@@ -6,8 +6,8 @@ from typing import Dict, List, Tuple, Union
 
 import torch
 
-from ..utils import get_logger, get_local_rank
-from ..device import get_device_type
+from ..utils import get_logger
+from ..device import to_device
 
 
 DEFAULT_LOGGER = get_logger('easytorch-checkpoint')
@@ -46,14 +46,9 @@ def load_ckpt(ckpt_save_dir: str, ckpt_path: str = None, logger: Logger = DEFAUL
 
     if ckpt_path is None:
         ckpt_path = get_last_ckpt_path(ckpt_save_dir)
-    map_location = {
-        'gpu': 'cuda:{}'.format(get_local_rank()),
-        'mlu': None,
-        'cpu': 'cpu'
-    }[get_device_type()]
 
     logger.info('Loading Checkpoint from \'{}\''.format(ckpt_path))
-    return torch.load(ckpt_path, map_location=map_location)
+    return torch.load(ckpt_path, map_location=lambda storage, loc: to_device(storage))
 
 
 def save_ckpt(ckpt: Dict, ckpt_path: str, logger: Logger = DEFAULT_LOGGER):
