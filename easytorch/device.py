@@ -3,6 +3,11 @@ from typing import Union
 import torch
 from torch import nn
 
+try:
+    __import__('torch_mlu')
+except ImportError:
+    pass
+
 __all__ = [
     'get_device_type', 'set_device_type', 'get_device_count', 'set_device', 'to_device', 'set_device_manual_seed'
 ]
@@ -18,8 +23,6 @@ def set_device_type(device_type: str):
     global _DEVICE_TYPE
     if device_type not in ['gpu', 'mlu', 'cpu']:
         raise ValueError('Unknown device type!')
-    if device_type == 'mlu':
-        __import__('torch_mlu')
     _DEVICE_TYPE = device_type
 
 
@@ -27,8 +30,7 @@ def get_device_count() -> int:
     if _DEVICE_TYPE == 'gpu':
         return torch.cuda.device_count()
     elif _DEVICE_TYPE == 'mlu':
-        torch_mlu = __import__('torch_mlu')
-        return torch_mlu.mlu_model.device_count()
+        return torch.mlu.device_count()
     elif _DEVICE_TYPE == 'cpu':
         return 0
     else:
@@ -39,24 +41,24 @@ def set_device(device_id: int):
     if _DEVICE_TYPE == 'gpu':
         torch.cuda.set_device(device_id)
     elif _DEVICE_TYPE == 'mlu':
-        torch_mlu = __import__('torch_mlu')
-        torch_mlu.mlu_model.set_device(device_id)
+        torch.mlu.set_device(device_id)
     else:
         raise ValueError('Unknown device type!')
 
 
-def to_device(src: Union[torch.Tensor, nn.Module], device_id: int = None) -> Union[torch.Tensor, nn.Module]:
+def to_device(src: Union[torch.Tensor, nn.Module], device_id: int = None,
+        non_blocking: bool = False) -> Union[torch.Tensor, nn.Module]:
+    kwargs = {'non_blocking': non_blocking} if isinstance(src, torch.Tensor) else {}
     if _DEVICE_TYPE == 'gpu':
         if device_id is None:
-            return src.cuda()
+            return src.cuda(**kwargs)
         else:
-            return src.to('cuda:{:d}'.format(device_id))
+            return src.to('cuda:{:d}'.format(device_id), **kwargs)
     elif _DEVICE_TYPE == 'mlu':
-        __import__('torch_mlu')
         if device_id is None:
-            return src.mlu()
+            return src.mlu(**kwargs)
         else:
-            return src.to('mlu:{:d}'.format(device_id))
+            return src.to('mlu:{:d}'.format(device_id), **kwargs)
     elif _DEVICE_TYPE == 'cpu':
         return src.cpu()
     else:
@@ -69,6 +71,5 @@ def set_device_manual_seed(seed: int):
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
     elif _DEVICE_TYPE == 'mlu':
-        torch_mlu = __import__('torch_mlu')
-        torch_mlu.mlu_model.manual_seed(seed)
-        torch_mlu.mlu_model.manual_seed_all(seed)
+        torch.mlu.manual_seed(seed)
+        torch.mlu.manual_seed_all(seed)
