@@ -4,7 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 from ..utils import get_rank, get_world_size
-from ..utils.data_prefetcher import DataLoaderX
+from ..utils.data_prefetcher import DataLoaderX, DevicePrefetcher
 
 
 def build_data_loader(dataset: Dataset, data_cfg: Dict):
@@ -17,8 +17,8 @@ def build_data_loader(dataset: Dataset, data_cfg: Dict):
         'SHUFFLE': (bool, optional) data reshuffled option (default: ``False``),
         'NUM_WORKERS': (int, optional) num workers for data loader (default: ``0``),
         'PIN_MEMORY': (bool, optional) pin_memory option (default: ``False``),
-        'PREFETCH': (bool, optional) set to ``True`` to use `BackgroundGenerator` (default: ``False``)
-            need to install `prefetch_generator`, see https://pypi.org/project/prefetch_generator/
+        'PREFETCH': (bool, optional) set to ``True`` to use `DataLoaderX` (default: ``False``),
+        'DEVICE_PREFETCH': (bool, optional) set to ``True`` to use `DevicePrefetcher` (default: ``False``),
     }
 
     Args:
@@ -29,24 +29,17 @@ def build_data_loader(dataset: Dataset, data_cfg: Dict):
         data loader
     """
 
-    if data_cfg.get('PREFETCH', False):
-        return DataLoaderX(
-            dataset,
-            collate_fn=data_cfg.get('COLLATE_FN', None),
-            batch_size=data_cfg.get('BATCH_SIZE', 1),
-            shuffle=data_cfg.get('SHUFFLE', False),
-            num_workers=data_cfg.get('NUM_WORKERS', 0),
-            pin_memory=data_cfg.get('PIN_MEMORY', False)
-        )
-    else:
-        return DataLoader(
-            dataset,
-            collate_fn=data_cfg.get('COLLATE_FN', None),
-            batch_size=data_cfg.get('BATCH_SIZE', 1),
-            shuffle=data_cfg.get('SHUFFLE', False),
-            num_workers=data_cfg.get('NUM_WORKERS', 0),
-            pin_memory=data_cfg.get('PIN_MEMORY', False)
-        )
+    data_loader = (DataLoaderX if data_cfg.get('PREFETCH', False) else DataLoader)(
+        dataset,
+        collate_fn=data_cfg.get('COLLATE_FN', None),
+        batch_size=data_cfg.get('BATCH_SIZE', 1),
+        shuffle=data_cfg.get('SHUFFLE', False),
+        num_workers=data_cfg.get('NUM_WORKERS', 0),
+        pin_memory=data_cfg.get('PIN_MEMORY', False)
+    )
+    if data_cfg.get('DEVICE_PREFETCH', False):
+        data_loader = DevicePrefetcher(data_loader)
+    return data_loader
 
 
 def build_data_loader_ddp(dataset: Dataset, data_cfg: Dict):
@@ -77,23 +70,15 @@ def build_data_loader_ddp(dataset: Dataset, data_cfg: Dict):
         get_rank(),
         shuffle=data_cfg.get('SHUFFLE', False)
     )
-    if data_cfg.get('PREFETCH', False):
-        return DataLoaderX(
-            dataset,
-            collate_fn=data_cfg.get('COLLATE_FN', None),
-            batch_size=data_cfg.get('BATCH_SIZE', 1),
-            shuffle=False,
-            sampler=ddp_sampler,
-            num_workers=data_cfg.get('NUM_WORKERS', 0),
-            pin_memory=data_cfg.get('PIN_MEMORY', False)
-        )
-    else:
-        return DataLoader(
-            dataset,
-            collate_fn=data_cfg.get('COLLATE_FN', None),
-            batch_size=data_cfg.get('BATCH_SIZE', 1),
-            shuffle=False,
-            sampler=ddp_sampler,
-            num_workers=data_cfg.get('NUM_WORKERS', 0),
-            pin_memory=data_cfg.get('PIN_MEMORY', False)
-        )
+    data_loader = (DataLoaderX if data_cfg.get('PREFETCH', False) else DataLoader)(
+        dataset,
+        collate_fn=data_cfg.get('COLLATE_FN', None),
+        batch_size=data_cfg.get('BATCH_SIZE', 1),
+        shuffle=False,
+        sampler=ddp_sampler,
+        num_workers=data_cfg.get('NUM_WORKERS', 0),
+        pin_memory=data_cfg.get('PIN_MEMORY', False)
+    )
+    if data_cfg.get('DEVICE_PREFETCH', False):
+        data_loader = DevicePrefetcher(data_loader)
+    return data_loader

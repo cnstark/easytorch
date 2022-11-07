@@ -1,7 +1,10 @@
 import threading
 import queue as Queue
 
+import torch
 from torch.utils.data import DataLoader
+
+from .. import device
 
 
 class BackgroundGenerator(threading.Thread):
@@ -67,3 +70,59 @@ class DataLoaderX(DataLoader):
     """
     def __iter__(self):
         return BackgroundGenerator(super().__iter__())
+
+
+class DevicePrefetcher:
+    """Device Prefetcher
+    """
+
+    def __init__(self, data_loader: DataLoader) -> None:
+        self.data_loader = data_loader
+        self.stream = torch.cuda.Stream()
+        self.batch_data = None
+
+    @staticmethod
+    def data_to_device(data):
+        if isinstance(data, dict):
+            for k, v in data.items():
+                if isinstance(v, torch.Tensor):
+                    data[k] = device.to_device(v, non_blocking=True)
+        elif isinstance(data, (list, tuple)):
+            for i, v in enumerate(data):
+                if isinstance(v, torch.Tensor):
+                    data[i] = device.to_device(v, non_blocking=True)
+        elif isinstance(data, torch.Tensor):
+            data = device.to_device(data, non_blocking=True)
+        return data
+
+    def preload(self):
+        try:
+            self.batch_data = next(self.data_loader_iter)
+            # put tensors to gpu
+            with device.stream(self.stream):
+                self.batch_data = self.data_to_device(self.batch_data)
+        except StopIteration:
+            self.batch_data = None
+
+    def next(self):
+        if self.batch_data is None:
+            raise StopIteration()
+
+        device.current_stream().wait_stream(self.stream)
+        batch = self.batch_data
+        self.preload()
+        return batch
+
+    def reset(self):
+        self.data_loader_iter = iter(self.data_loader)
+        self.preload()
+
+    def __next__(self):
+        return self.next()
+
+    def __iter__(self):
+        self.reset()
+        return self
+
+    def __len__(self):
+        return len(self.data_loader)

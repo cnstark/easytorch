@@ -65,6 +65,33 @@ def to_device(src: Union[torch.Tensor, nn.Module], device_id: int = None,
         raise ValueError('Unknown device type!')
 
 
+def init_stream():
+    if _DEVICE_TYPE == 'gpu':
+        return torch.cuda.Stream()
+    elif _DEVICE_TYPE == 'mlu':
+        return torch.mlu.Stream()
+    else:
+        raise ValueError('Unknown device type!')
+
+
+def stream(st):
+    if _DEVICE_TYPE == 'gpu':
+        return torch.cuda.stream(st)
+    elif _DEVICE_TYPE == 'mlu':
+        return torch.mlu.stream(st)
+    else:
+        raise ValueError('Unknown device type!')
+
+
+def current_stream():
+    if _DEVICE_TYPE == 'gpu':
+        return torch.cuda.current_stream()
+    elif _DEVICE_TYPE == 'mlu':
+        return torch.mlu.current_stream()
+    else:
+        raise ValueError('Unknown device type!')
+
+
 def set_device_manual_seed(seed: int):
     torch.manual_seed(seed)
     if _DEVICE_TYPE == 'gpu':
