@@ -4,7 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 from ..utils import get_rank, get_world_size
-from ..utils.data_prefetcher import DataLoaderX, DevicePrefetcher
+from ..utils.data_prefetcher import DataLoaderX
 
 
 def build_data_loader(dataset: Dataset, data_cfg: Dict):
@@ -18,7 +18,6 @@ def build_data_loader(dataset: Dataset, data_cfg: Dict):
         'NUM_WORKERS': (int, optional) num workers for data loader (default: ``0``),
         'PIN_MEMORY': (bool, optional) pin_memory option (default: ``False``),
         'PREFETCH': (bool, optional) set to ``True`` to use `DataLoaderX` (default: ``False``),
-        'DEVICE_PREFETCH': (bool, optional) set to ``True`` to use `DevicePrefetcher` (default: ``False``),
     }
 
     Args:
@@ -29,7 +28,7 @@ def build_data_loader(dataset: Dataset, data_cfg: Dict):
         data loader
     """
 
-    data_loader = (DataLoaderX if data_cfg.get('PREFETCH', False) else DataLoader)(
+    return (DataLoaderX if data_cfg.get('PREFETCH', False) else DataLoader)(
         dataset,
         collate_fn=data_cfg.get('COLLATE_FN', None),
         batch_size=data_cfg.get('BATCH_SIZE', 1),
@@ -37,9 +36,6 @@ def build_data_loader(dataset: Dataset, data_cfg: Dict):
         num_workers=data_cfg.get('NUM_WORKERS', 0),
         pin_memory=data_cfg.get('PIN_MEMORY', False)
     )
-    if data_cfg.get('DEVICE_PREFETCH', False):
-        data_loader = DevicePrefetcher(data_loader)
-    return data_loader
 
 
 def build_data_loader_ddp(dataset: Dataset, data_cfg: Dict):
@@ -70,7 +66,7 @@ def build_data_loader_ddp(dataset: Dataset, data_cfg: Dict):
         get_rank(),
         shuffle=data_cfg.get('SHUFFLE', False)
     )
-    data_loader = (DataLoaderX if data_cfg.get('PREFETCH', False) else DataLoader)(
+    return (DataLoaderX if data_cfg.get('PREFETCH', False) else DataLoader)(
         dataset,
         collate_fn=data_cfg.get('COLLATE_FN', None),
         batch_size=data_cfg.get('BATCH_SIZE', 1),
@@ -79,6 +75,3 @@ def build_data_loader_ddp(dataset: Dataset, data_cfg: Dict):
         num_workers=data_cfg.get('NUM_WORKERS', 0),
         pin_memory=data_cfg.get('PIN_MEMORY', False)
     )
-    if data_cfg.get('DEVICE_PREFETCH', False):
-        data_loader = DevicePrefetcher(data_loader)
-    return data_loader
