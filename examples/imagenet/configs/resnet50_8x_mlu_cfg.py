@@ -7,7 +7,8 @@ CFG = Config()
 
 CFG.DESC = 'imagenet resnet50'
 CFG.RUNNER = ImagenetRunner
-CFG.MLU_NUM = 8
+CFG.DEVICE = 'mlu'
+CFG.DEVICE_NUM = 8
 CFG.DIST_BACKEND = 'cncl'
 
 CFG.MODEL = Config()

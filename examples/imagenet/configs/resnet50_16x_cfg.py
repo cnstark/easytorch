@@ -7,7 +7,8 @@ CFG = Config()
 
 CFG.DESC = 'imagenet resnet50'
 CFG.RUNNER = ImagenetRunner
-CFG.GPU_NUM = 8
+CFG.DEVICE = 'gpu'
+CFG.DEVICE_NUM = 8
 CFG.DIST_NODE_NUM = 2
 CFG.DIST_BACKEND = 'nccl'
 CFG.DIST_INIT_METHOD='tcp://{ip_of_node_0}:{free_port}'

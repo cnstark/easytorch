@@ -48,14 +48,14 @@ To train other models or modify hyperparameters, customize config yourself.
 
 ```shell
 # last
-python validate.py -c configs/resnet50_8x_cfg.py --gpus 0
+python validate.py -c configs/resnet50_8x_cfg.py --devices 0
 
 # best
-python validate.py -c configs/resnet50_8x_cfg.py --gpus 0 --ckpt /path/to/ckpt_dir/resnet50_best_val_acc@1.pt
+python validate.py -c configs/resnet50_8x_cfg.py --devices 0 --ckpt /path/to/ckpt_dir/resnet50_best_val_acc@1.pt
 ```
 
 ### MobileNet V3 Large
 
 ```shell
-python validate.py -c configs/mobilenet_v3_large_8x_cfg.py --gpus 0
+python validate.py -c configs/mobilenet_v3_large_8x_cfg.py --devices 0
 ```
