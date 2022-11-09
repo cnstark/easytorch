@@ -329,11 +329,13 @@ class Runner(metaclass=ABCMeta):
 
             # tqdm process bar
             if cfg.get('TRAIN.DATA.DEVICE_PREFETCH', False):
-                data_iter = DevicePrefetcher(self.train_data_loader)
-            data_iter = tqdm(data_iter) if get_local_rank() == 0 else data_iter
+                data_loader = DevicePrefetcher(self.train_data_loader)
+            else:
+                data_loader = self.train_data_loader
+            data_loader = tqdm(data_loader) if get_local_rank() == 0 else data_loader
 
             # data loop
-            for iter_index, data in enumerate(data_iter):
+            for iter_index, data in enumerate(data_loader):
                 loss = self.train_iters(epoch, iter_index, data)
                 if loss is not None:
                     self.backward(loss)
