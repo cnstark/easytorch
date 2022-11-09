@@ -72,6 +72,22 @@ class DataLoaderX(DataLoader):
         return BackgroundGenerator(super().__iter__())
 
 
+def data_to_device(data):
+    if isinstance(data, dict):
+        for k, v in data.items():
+            if isinstance(v, torch.Tensor):
+                data[k] = data_to_device(v)
+    elif isinstance(data, list):
+        for i, v in enumerate(data):
+            if isinstance(v, torch.Tensor):
+                data[i] = data_to_device(v)
+    elif isinstance(data, tuple):
+        data = tuple(data_to_device(list(data)))
+    elif isinstance(data, torch.Tensor):
+        data = device.to_device(data, non_blocking=True)
+    return data
+
+
 class DevicePrefetcher:
     """Device Prefetcher
     """
@@ -100,7 +116,7 @@ class DevicePrefetcher:
             self.batch_data = next(self.data_loader_iter)
             # put tensors to gpu
             with device.stream(self.stream):
-                self.batch_data = self.data_to_device(self.batch_data)
+                self.batch_data = data_to_device(self.batch_data)
         except StopIteration:
             self.batch_data = None
 
