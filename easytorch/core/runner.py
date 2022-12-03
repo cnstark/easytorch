@@ -362,6 +362,18 @@ class Runner(metaclass=ABCMeta):
 
         self.on_training_end()
 
+    def init_lr_scheduler(self, cfg: Config):
+        """Initialize lr_scheduler
+
+        Args:
+            cfg (Dict): config
+        """
+        # create lr_scheduler
+        if cfg.has('TRAIN.LR_SCHEDULER'):
+            self.scheduler = build_lr_scheduler(cfg['TRAIN.LR_SCHEDULER'], self.optim)
+            self.logger.info('Set lr_scheduler: {}'.format(self.scheduler))
+            self.register_epoch_meter('lr', 'train', '{:.2e}')
+
     def init_training(self, cfg: Config):
         """Initialize training
 
@@ -389,10 +401,7 @@ class Runner(metaclass=ABCMeta):
         self.logger.info('Set optim: {}'.format(self.optim))
 
         # create lr_scheduler
-        if cfg.has('TRAIN.LR_SCHEDULER'):
-            self.scheduler = build_lr_scheduler(cfg['TRAIN.LR_SCHEDULER'], self.optim)
-            self.logger.info('Set lr_scheduler: {}'.format(self.scheduler))
-            self.register_epoch_meter('lr', 'train', '{:.2e}')
+        self.init_lr_scheduler(cfg)
 
         # fine tune
         if cfg.has('TRAIN.FINETUNE_FROM'):
