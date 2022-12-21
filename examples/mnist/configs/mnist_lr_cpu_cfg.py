@@ -7,7 +7,7 @@ CFG = Config()
 
 CFG.DESC = 'mnist, lr scheduler'
 CFG.RUNNER = MNISTRunner
-CFG.USE_GPU = False
+CFG.DEVICE = 'cpu'
 
 CFG.MODEL = Config()
 CFG.MODEL.NAME = 'conv_net'
