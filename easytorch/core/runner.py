@@ -25,6 +25,28 @@ from ..device import to_device
 class Runner(metaclass=ABCMeta):
     """Base EasyTorch Runner
     """
+    """Base EasyTorch Runner
+    init_logger()
+    define_model() unrealized
+    build_train_dataset unrealized
+    build_val_dataset() unrealized
+    get_ckpt_path()
+    build_model()
+    get_ckpt_path()
+    save_model()
+    load_model_resume()
+    load_model()
+    train()
+    init_training()
+    on_epoch_start()
+    on_training_end()  only close tensorboard
+    train_iters() unrealized
+    backward()
+    validate()
+    init_validation()
+    on_validating_start() unrealized
+    on_validating_end() unrealized
+    """
 
     def __init__(self, cfg: Config):
         # default logger
@@ -362,6 +384,16 @@ class Runner(metaclass=ABCMeta):
 
         self.on_training_end()
 
+    def init_optim(self, cfg: Config):
+        """Initialize optimizer
+
+        Args:
+            cfg (Dict): config
+        """
+        # create lr_scheduler
+        self.optim = build_optim(cfg['TRAIN.OPTIM'], self.model)
+        self.logger.info('Set optim: {}'.format(self.optim))
+
     def init_lr_scheduler(self, cfg: Config):
         """Initialize lr_scheduler
 
@@ -397,8 +429,7 @@ class Runner(metaclass=ABCMeta):
         self.register_epoch_meter('train_time', 'train', '{:.2f} (s)', plt=False)
 
         # create optim
-        self.optim = build_optim(cfg['TRAIN.OPTIM'], self.model)
-        self.logger.info('Set optim: {}'.format(self.optim))
+        self.init_optim(cfg)
 
         # create lr_scheduler
         self.init_lr_scheduler(cfg)
@@ -433,7 +464,10 @@ class Runner(metaclass=ABCMeta):
         self.logger.info('Epoch {:d} / {:d}'.format(epoch, self.num_epochs))
         # update lr meter
         if self.scheduler is not None:
-            self.update_epoch_meter('lr', self.scheduler.get_last_lr()[0])
+            try:
+                self.update_epoch_meter('lr', self.scheduler.get_last_lr()[0])
+            except NotImplementedError:
+                self.update_epoch_meter('lr', self.scheduler.get_lr()[0])
 
         # set epoch for sampler in distributed mode
         # see https://pytorch.org/docs/stable/data.html

@@ -57,7 +57,7 @@ def build_optim(optim_cfg: Dict, model: nn.Module) -> optim.Optimizer:
         else:
             optim_type = getattr(easyoptim, optim_cfg['TYPE'])
 
-    # Obtain General parameters
+    # Obtain general parameters
     optim_param = optim_cfg['PARAM'].copy()
 
     # All parameters in the model
