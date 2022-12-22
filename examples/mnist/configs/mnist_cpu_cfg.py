@@ -7,7 +7,7 @@ CFG = Config()
 
 CFG.DESC = 'mnist'
 CFG.RUNNER = MNISTRunner
-CFG.GPU_NUM = 0
+CFG.DEVICE = 'cpu'
 
 CFG.MODEL = Config()
 CFG.MODEL.NAME = 'conv_net'

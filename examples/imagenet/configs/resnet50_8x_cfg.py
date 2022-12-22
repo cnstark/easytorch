@@ -7,7 +7,8 @@ CFG = Config()
 
 CFG.DESC = 'imagenet resnet50'
 CFG.RUNNER = ImagenetRunner
-CFG.GPU_NUM = 8
+CFG.DEVICE = 'gpu'
+CFG.DEVICE_NUM = 8
 
 CFG.MODEL = Config()
 CFG.MODEL.NAME = 'resnet50'

@@ -7,7 +7,7 @@ CFG = Config()
 
 CFG.DESC = 'linear_regression'
 CFG.RUNNER = LinearRegressionRunner
-CFG.GPU_NUM = 0
+CFG.DEVICE = 'cpu'
 
 CFG.MODEL = Config()
 CFG.MODEL.NAME = 'linear'

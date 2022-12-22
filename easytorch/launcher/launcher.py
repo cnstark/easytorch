@@ -96,7 +96,8 @@ def launch_runner(cfg: Union[Dict, str], fn: Callable, args: Tuple = (), device_
             the Easytorch config and ``runner`` is the runner defined by ``cfg`` and
             ``args`` is the passed through tuple of arguments.
         args (tuple): Arguments passed to ``fn``.
-        gpus (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
+        device_type (str): Device type. Valid values are ['cpu', 'gpu', 'mlu'].
+        devices (str): set ``CUDA_VISIBLE_DEVICES`` environment variable.
     """
 
     logger = get_logger('easytorch-launcher')
