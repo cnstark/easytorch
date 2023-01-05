@@ -7,7 +7,8 @@ CFG = Config()
 
 CFG.DESC = 'imagenet mobilenet_v3_large'
 CFG.RUNNER = ImagenetRunner
-CFG.GPU_NUM = 8
+CFG.DEVICE = 'gpu'
+CFG.DEVICE_NUM = 8
 
 CFG.MODEL = Config()
 CFG.MODEL.NAME = 'mobilenet_v3_large'
