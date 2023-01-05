@@ -645,6 +645,8 @@ class Runner(metaclass=ABCMeta):
                 '{}_best_{}.pt'.format(self.model_name, metric_name.replace('/', '_'))
             )
             save_ckpt(ckpt_dict, ckpt_path, self.logger)
+            return True
+        return False
 
     @master_only
     def register_epoch_meter(self, name, meter_type, fmt='{:f}', plt=True):
