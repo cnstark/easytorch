@@ -94,6 +94,10 @@ def scan_modules(work_dir: str, file_dir: str, exclude_files: List[str] = None):
     """
     automatically scan and import modules for registry
     """
+    if platform.system().lower() == 'windows':
+        # On Windows systems, os.getcwd() (i.e., work_dir) will get an uppercase drive letter, such as C:\\Users\\...
+        # However, the drive letter obtained by __file__ (i.e., file_dir) is lowercase, such as c:\\Users\\...
+        file_dir = file_dir[0].upper() + file_dir[1:]
     module_dir = os.path.dirname(os.path.abspath(file_dir))
     import_prefix = module_dir[module_dir.find(work_dir) + len(work_dir) + 1:].replace('/', '.').replace('\\', '.')
 
