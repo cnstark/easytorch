@@ -9,6 +9,8 @@ class AvgMeter(object):
     """
 
     def __init__(self):
+
+        self._last = 0.
         self._sum = 0.
         self._count = 0
 
@@ -16,6 +18,7 @@ class AvgMeter(object):
         """Reset counter.
         """
 
+        self._last = 0.
         self._sum = 0.
         self._count = 0
 
@@ -27,6 +30,7 @@ class AvgMeter(object):
             n (int): number.
         """
 
+        self._last = value
         self._sum += value * n
         self._count += n
 
@@ -40,6 +44,15 @@ class AvgMeter(object):
 
         return self._sum / self._count if self._count != 0 else 0
 
+    @property
+    def last(self) -> float:
+        """Get last value.
+
+        Returns:
+            last (float)
+        """
+
+        return self._last
 
 class MeterPool:
     """Meter container
@@ -114,7 +127,7 @@ class MeterPool:
         else:
             logger.info(print_str)
 
-    def plt_meters(self, meter_type: str, step: int, tensorboard_writer: SummaryWriter):
+    def plt_meters(self, meter_type: str, step: int, tensorboard_writer: SummaryWriter, value_type: str = 'avg'):
         """Plot the specified type of meters in tensorboard.
 
         Args:
@@ -123,9 +136,13 @@ class MeterPool:
             tensorboard_writer (SummaryWriter): tensorboard SummaryWriter
         """
 
+        assert value_type in ['avg', 'last'], "value_type must be 'avg' or 'last'"
+
+        get_value = lambda meter: meter.avg if value_type == 'avg' else meter.last
+
         for name, value in self._pool.items():
             if value['plt'] and value['type'] == meter_type:
-                tensorboard_writer.add_scalar(name, value['meter'].avg, global_step=step)
+                tensorboard_writer.add_scalar(name, get_value(value['meter']), global_step=step)
         tensorboard_writer.flush()
 
     def reset(self):

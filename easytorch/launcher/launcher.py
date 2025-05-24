@@ -2,10 +2,9 @@ import traceback
 from typing import Callable, Dict, Union, Tuple
 
 from ..config import init_cfg
-from ..utils import set_visible_devices, get_logger
+from ..utils import set_visible_devices, get_logger, is_master
 from ..device import set_device_type
 from .dist_wrap import dist_wrap
-
 
 def training_func(cfg: Dict):
     """Start training
@@ -20,7 +19,8 @@ def training_func(cfg: Dict):
 
     # init runner
     logger = get_logger('easytorch-launcher')
-    logger.info('Initializing runner "{}"'.format(cfg['RUNNER']))
+    if is_master():
+        logger.info('Initializing runner "{}"'.format(cfg['RUNNER']))
     runner = cfg['RUNNER'](cfg)
 
     # init logger (after making ckpt save dir)
@@ -114,4 +114,4 @@ def launch_runner(cfg: Union[Dict, str], fn: Callable, args: Tuple = (), device_
     runner = cfg['RUNNER'](cfg)
 
     # call fn
-    fn(cfg, runner, *args)
+    return fn(cfg, runner, *args)

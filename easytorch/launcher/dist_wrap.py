@@ -39,8 +39,12 @@ def dist_func(local_rank: int, dist_params: Dict[str, Any], func: Callable, *arg
 
     set_device(local_rank)
 
-    args, kwargs = args
-    func(*args, **kwargs)
+    try:
+        args, kwargs = args
+        func(*args, **kwargs)
+    finally:
+        # https://pytorch.org/docs/stable/distributed.html#shutdown
+        torch.distributed.destroy_process_group()
 
 
 def dist_wrap(func: Callable,
