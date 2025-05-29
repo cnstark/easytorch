@@ -6,7 +6,12 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset
 
-from easytorch import Config, Runner, get_rank, launch_training
+#path patch
+import sys
+sys.path.append('../..')
+
+from easytorch import Config, Runner, launch_training
+from easytorch.utils import get_rank
 
 
 class FakeDataset(Dataset):
