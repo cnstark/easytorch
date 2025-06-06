@@ -37,6 +37,14 @@ def build_optim(optim_cfg: Dict, model: nn.Module) -> optim.Optimizer:
         optim_cfg (Dict): optimizer config
         model (nn.Module): model defined by user
 
+    Option:
+        Add parameters with special optimizer hyperparameters by set _optim attribute
+        example:
+        net = nn.Parameter(torch.zeros(10))
+        setattr(net, "_optim", {'lr': 0.01,"weight_decay": 0.0})
+
+        Information of optimizer will be printed. You can check it.
+
     Returns:
         optimizer (optim.Optimizer)
     """
@@ -48,8 +56,40 @@ def build_optim(optim_cfg: Dict, model: nn.Module) -> optim.Optimizer:
             optim_type = getattr(optim, optim_cfg['TYPE'])
         else:
             optim_type = getattr(easyoptim, optim_cfg['TYPE'])
+
+    # Obtain general parameters
     optim_param = optim_cfg['PARAM'].copy()
-    optimizer = optim_type(model.parameters(), **optim_param)
+
+    # All parameters in the model
+    all_parameters = list(model.parameters())
+
+    # General parameters don't contain the special _optim key
+    params = [p for p in all_parameters if not hasattr(p, "_optim")]
+
+    # Create an optimizer with the general parameters
+    optimizer = optim_type(params, **optim_param)
+
+    # Add parameters with special hyperparameters
+    hps = [getattr(p, "_optim") for p in all_parameters if hasattr(p, "_optim")]
+    hps = [
+        # Create unique special hyperparameters dicts
+        dict(s) for s in sorted(list(dict.fromkeys(frozenset(hp.items()) for hp in hps)))
+    ]
+    for hp in hps:
+        params = [p for p in all_parameters if getattr(p, "_optim", None) == hp]
+        optimizer.add_param_group(
+            {"params": params, **hp}
+        )
+
+    # Print optimizer info
+    keys = sorted(set([k for hp in hps for k in hp.keys()]))
+    for i, g in enumerate(optimizer.param_groups):
+        group_hps = {k: g.get(k, None) for k in keys}
+        print(' | '.join([
+                             f"Optimizer group {i}",
+                             f"{len(g['params'])} tensors",
+                         ] + [f"{k} {v}" for k, v in group_hps.items()]))
+
     return optimizer
 
 
